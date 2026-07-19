@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="EmployeesConsole/EmployeesConsole.csproj" />
+  <Project Path="EmployeesLibrary/EmployeesLibrary.csproj" />
+</Solution>
