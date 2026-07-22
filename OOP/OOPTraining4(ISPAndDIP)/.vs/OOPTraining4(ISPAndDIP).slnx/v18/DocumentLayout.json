@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\\u0418\u043B\u044C\u044F\\Desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\Tasks\\OOP\\OOPTraining4(ISPAndDIP)\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1D094C5C-B98D-8D37-1AC0-DBE6EA259132}|CompanyLibrary\\CompanyLibrary.csproj|c:\\users\\\u0438\u043B\u044C\u044F\\desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\tasks\\oop\\ooptraining4(ispanddip)\\companylibrary\\employee.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1D094C5C-B98D-8D37-1AC0-DBE6EA259132}|CompanyLibrary\\CompanyLibrary.csproj|solutionrelative:companylibrary\\employee.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FC22B20C-3BE1-7CD4-3FB6-62460E4F7447}|CompanyConsole\\CompanyConsole.csproj|c:\\users\\\u0438\u043B\u044C\u044F\\desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\tasks\\oop\\ooptraining4(ispanddip)\\companyconsole\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FC22B20C-3BE1-7CD4-3FB6-62460E4F7447}|CompanyConsole\\CompanyConsole.csproj|solutionrelative:companyconsole\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Employee.cs",
+              "DocumentMoniker": "C:\\Users\\\u0418\u043B\u044C\u044F\\Desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\Tasks\\OOP\\OOPTraining4(ISPAndDIP)\\CompanyLibrary\\Employee.cs",
+              "RelativeDocumentMoniker": "CompanyLibrary\\Employee.cs",
+              "ToolTip": "C:\\Users\\\u0418\u043B\u044C\u044F\\Desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\Tasks\\OOP\\OOPTraining4(ISPAndDIP)\\CompanyLibrary\\Employee.cs",
+              "RelativeToolTip": "CompanyLibrary\\Employee.cs",
+              "ViewState": "AgIAAMUAAAAAAAAAAAAcwMwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-22T06:11:25.434Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\\u0418\u043B\u044C\u044F\\Desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\Tasks\\OOP\\OOPTraining4(ISPAndDIP)\\CompanyConsole\\Program.cs",
+              "RelativeDocumentMoniker": "CompanyConsole\\Program.cs",
+              "ToolTip": "C:\\Users\\\u0418\u043B\u044C\u044F\\Desktop\\\u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435\\Tasks\\OOP\\OOPTraining4(ISPAndDIP)\\CompanyConsole\\Program.cs",
+              "RelativeToolTip": "CompanyConsole\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-22T06:11:23.823Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

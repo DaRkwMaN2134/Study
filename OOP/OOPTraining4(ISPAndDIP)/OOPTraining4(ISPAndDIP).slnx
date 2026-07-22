@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CompanyConsole/CompanyConsole.csproj" />
+  <Project Path="CompanyLibrary/CompanyLibrary.csproj" />
+</Solution>
