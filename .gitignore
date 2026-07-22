@@ -6,6 +6,7 @@ log.txt
 # Временные файлы сборки (для проектов Visual Studio)
 bin/
 obj/
+vs/
 *.exe
 *.dll
 *.pdb
