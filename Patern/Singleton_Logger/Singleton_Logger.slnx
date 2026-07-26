@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Singleton_Logger.Test/Singleton_Logger.Test.csproj" Id="ecef3eaf-5b04-46c3-b384-660022f797b9" />
   <Project Path="Singleton_Logger/Singleton_Logger.csproj" />
 </Solution>

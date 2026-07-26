@@ -1,4 +1,7 @@
-﻿class Programm
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+class Programm
 {
     static void Main()
     {
@@ -14,7 +17,7 @@
 
 
 
-class Logger
+public class Logger
 {
     private static Logger _instance;
     public static Logger Instance => _instance ??= new Logger();
@@ -24,7 +27,6 @@ class Logger
     private Logger()
     {
     }
-
     public void Log(string message)
     {
         logList.Add(message);
@@ -40,5 +42,8 @@ class Logger
         {
             Console.WriteLine("Логов нет");
         }
+
     }
+    public IReadOnlyList<string> GetLogs() => logList.AsReadOnly();
+    public void ClearLogs() => logList.Clear();
 }

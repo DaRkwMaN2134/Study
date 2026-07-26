@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Factory.Test/Factory.Test.csproj" Id="cf7b8a8c-ab92-43ae-bc79-4823fce57483" />
   <Project Path="Factory/Factory.csproj" />
   <Project Path="Program/Program.csproj" />
 </Solution>
