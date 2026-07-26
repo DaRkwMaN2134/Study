@@ -1,6 +1,7 @@
-using System.Net;
+﻿using System.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace CompanyLibrary
+namespace Factory
 {
     public class EmployeeData
     {
@@ -12,6 +13,37 @@ namespace CompanyLibrary
             Salary = salary;
         }
     }
+
+
+    public static class EmployeeFactory
+    {
+        public static IWorkable Create(string job, string name, double salary, int extra )
+        {
+            switch (job)
+            {
+                case "manager":
+                    return new Manager(name, salary, extra);
+                    break;
+
+                case "developer":
+                    return new Developer(name, salary, extra);
+                    break;
+
+                case "intern":
+                    return new Intern(name, salary);
+                    break;
+
+                case "freelancer":
+                    return new Freelancer(name, salary, extra);
+                    break;
+                default:
+                    throw new ArgumentException($"Такой профессии не существует!!");
+                    break;
+
+            }
+        }
+    }
+
 
     public class Employee
     {
@@ -151,7 +183,7 @@ namespace CompanyLibrary
         public void SendEmail(string address, string message);
     }
 
-    
+
     public interface ISmsNotifier
     {
         public void SendSms(string phone, string message);
@@ -199,7 +231,7 @@ namespace CompanyLibrary
         }
     }
 
-    public class EmailNotifier: IEmailNotifier
+    public class EmailNotifier : IEmailNotifier
     {
         public void SendEmail(string address, string message)
         {
