@@ -1,7 +1,4 @@
-﻿using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Factory
+﻿namespace Factory
 {
     public class EmployeeData
     {
@@ -17,7 +14,7 @@ namespace Factory
 
     public static class EmployeeFactory
     {
-        public static IWorkable Create(string job, string name, double salary, int extra )
+        public static IWorkable Create(string job, string name, double salary, int extra)
         {
             switch (job)
             {
@@ -45,6 +42,16 @@ namespace Factory
     }
 
 
+
+    public static class Factory
+    {
+        public static Employee CreateEmployee(EmployeeData data, IBonusCalculator bonusCalculator)
+        {
+            return new Employee(data, bonusCalculator, new ConsoleOutput(), new EmailNotifier(), new SmsNotifier());
+        }
+    }
+
+
     public class Employee
     {
         private IBonusCalculator _bonusCalculator;
@@ -66,17 +73,16 @@ namespace Factory
         }
         public void PrintInfo()
         {
-            _output.Write($"Имя: {_employeedata.Name}, Зарплата: {GetTotalSalary()}");
             _emailnotifier.SendEmail($"admin@company.com", $"Info about {_employeedata.Name}");
+            _output.Write($"Имя: {_employeedata.Name}, Зарплата: {GetTotalSalary()}");
         }
     }
     public class Manager : IWorkable, IPrintable
     {
         private Employee _employee;
-
         public Manager(string name, double salary, int teamcount)
         {
-            _employee = new Employee(new EmployeeData(name, salary), new ManagerBonusCalculator(), new ConsoleOutput(), new EmailNotifier(), new SmsNotifier());
+            _employee = Factory.CreateEmployee(new EmployeeData(name, salary), new ManagerBonusCalculator());
         }
         public void PrintInfo()
         {
@@ -96,7 +102,7 @@ namespace Factory
 
         public Developer(string name, double salary, int projectcount)
         {
-            _employee = new Employee(new EmployeeData(name, salary), new DeveloperBonusCalculator(), new ConsoleOutput(), new EmailNotifier(), new SmsNotifier());
+            _employee = Factory.CreateEmployee(new EmployeeData(name, salary), new DeveloperBonusCalculator());
         }
 
         public void PrintInfo()
@@ -117,7 +123,7 @@ namespace Factory
 
         public Intern(string name, double salary)
         {
-            _employee = new Employee(new EmployeeData(name, salary), new InternBonusCalculator(), new ConsoleOutput(), new EmailNotifier(), new SmsNotifier());
+            _employee = Factory.CreateEmployee(new EmployeeData(name, salary), new InternBonusCalculator());
         }
 
         public void PrintInfo()
@@ -141,7 +147,7 @@ namespace Factory
         public Freelancer(string name, double salary, int projects)
         {
             _projects = projects;
-            _employee = new Employee(new EmployeeData(name, salary), new FreelancerBonusCalculator(), new ConsoleOutput(), new EmailNotifier(), new SmsNotifier());
+            _employee = Factory.CreateEmployee(new EmployeeData(name, salary), new FreelancerBonusCalculator());
         }
 
         public void PrintInfo()
