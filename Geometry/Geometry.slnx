@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Geometry.Test/Geometry.Test.csproj" />
+  <Project Path="Geometry/Geometry.csproj" />
+</Solution>
