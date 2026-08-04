@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Function_Test/Function_Test.csproj" />
+  <Project Path="Program/Program.csproj" />
+  <Project Path="Shape_Calculator/Shape_Calculator/Shape_Calculator.csproj" />
+</Solution>
