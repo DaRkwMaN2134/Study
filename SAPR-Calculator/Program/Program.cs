@@ -1,15 +1,12 @@
 ﻿using Shape_Calculator;
 using System.IO;
 
-
 string mainfile = "shapes.txt";
 string errorfile = "errors.log";
 string mainpath = Path.Combine(mainfile);
 string errorpath = Path.Combine(errorfile);
 
-List<Shape> list = new List<Shape>(){
-    ShapeFactory.Create("circle", [-5])
-};
+List<Shape> list = new List<Shape>(){};
 
 async Task<string[]> ReadFileAsync()
 {
@@ -66,9 +63,11 @@ void ShapeData(string[] lines)
                 }
                 if (double.TryParse(parts[1], out double radius))
                 {
+                    var _CircleAreaCalculator = new CircleAreaCalculator();
+                    var CirclePerimeterCalculator = new CirclePerimeterCalculator();
                     if (radius > 0)
                     {
-                        list.Add(ShapeFactory.Create("circle", radius));
+                        list.Add(ShapeFactory.Create("circle", _CircleAreaCalculator, CirclePerimeterCalculator, [radius]));
                     }
                     else
                     {
@@ -90,9 +89,11 @@ void ShapeData(string[] lines)
                 }
                 if (double.TryParse(parts[1], out double width) && double.TryParse(parts[2], out double height))
                 {
+                    var _RectangleAreaCalculator = new RectangleAreaCalculator();
+                    var RectanglePerimeterCalculator = new RectanglePerimeterCalculator();
                     if (width > 0 && height > 0)
                     {
-                        list.Add(ShapeFactory.Create("rectangle", width, height));
+                        list.Add(ShapeFactory.Create("rectangle", _RectangleAreaCalculator, RectanglePerimeterCalculator, [width, height]));
                     }
                     else
                     {
@@ -114,9 +115,11 @@ void ShapeData(string[] lines)
                 }
                 if (double.TryParse(parts[1], out double sidea) && double.TryParse(parts[2], out double sideb) && double.TryParse(parts[3], out double sidec))
                 {
+                    var _TriangleAreaCalculator = new TriangleAreaCalculator();
+                    var TrianglePerimeterCalculator = new TrianglePerimeterCalculator();
                     if (sidea + sideb > sidec && sidea + sidec > sideb && sideb + sidec > sidea)
                     {
-                        list.Add(ShapeFactory.Create("triangle", sidea, sideb, sidec));
+                        list.Add(ShapeFactory.Create("triangle", _TriangleAreaCalculator, TrianglePerimeterCalculator, [sidea, sideb, sidec]));
                     }
                     else
                     {

@@ -6,18 +6,18 @@ namespace Shape_Calculator
 
     public static class ShapeFactory
     {
-        public static Shape Create(string type, params double[] parameters)
+        public static Shape Create(string type, IAreaCalculator _IAreaCalculator, IPerimeterCalculator _IPerimeterCalculator, params double[] parameters)
         {
-            switch(type)
+            switch (type)
             {
                 case "circle":
-                    return new Circle(parameters[0]);
+                    return new Circle(_IAreaCalculator, _IPerimeterCalculator, parameters[0]);
 
                 case "rectangle":
-                    return new Rectangle(parameters[0], parameters[1]);
+                    return new Rectangle(_IAreaCalculator, _IPerimeterCalculator, parameters[0], parameters[1]);
 
                 case "triangle":
-                    return new Triangle(parameters[0], parameters[1], parameters[2]);
+                    return new Triangle(_IAreaCalculator, _IPerimeterCalculator, parameters[0], parameters[1], parameters[2]);
                 default:
                     return null;
             }
@@ -47,20 +47,25 @@ namespace Shape_Calculator
 
     public class Circle: Shape, IDrawable
     {
-        double Radius { get; set; }
+        public double Radius { get; set; }
+        IAreaCalculator _IAreaCalculator;
+        IPerimeterCalculator _IPerimeterCalculator;
 
-        public Circle(double radius) : base("Круг")
+        public Circle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double radius) : base("Круг")
         {
             Radius = radius;
+            _IAreaCalculator = iAreaCalculator;
+            _IPerimeterCalculator = iPerimeterCalculator;
         }
+
         public override double Area()
         {
-            return 3.14 * (Radius * Radius);
+            return _IAreaCalculator.CalculateArea(this);
         }
 
         public override double Perimeter()
         {
-            return (2 * 3.14) * Radius;
+            return _IPerimeterCalculator.CalculatePerimeter(this);
         }
 
         public override void PrintInfo()
@@ -77,22 +82,26 @@ namespace Shape_Calculator
 
     public class Rectangle : Shape, IDrawable
     {
-        double Width { get; set; }
-        double Height { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        IAreaCalculator _IAreaCalculator;
+        IPerimeterCalculator _IPerimeterCalculator;
 
-        public Rectangle(double width, double height) : base("Прямоугольник")
+        public Rectangle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double width, double height) : base("Прямоугольник")
         {
+            _IAreaCalculator = iAreaCalculator;
+            _IPerimeterCalculator = iPerimeterCalculator;
             Width = width;
             Height = height;
         }
         public override double Area()
         {
-            return Width * Height;
+            return _IAreaCalculator.CalculateArea(this);
         }
 
         public override double Perimeter()
         {
-            return 2 * (Width + Height);
+            return _IPerimeterCalculator.CalculatePerimeter(this);
         }
 
         public override void PrintInfo()
@@ -109,35 +118,28 @@ namespace Shape_Calculator
 
     public class Triangle : Shape, IDrawable
     {
-        double SideA { get; set; }
-        double SideB { get; set; }
-        double SideC { get; set; }
+        public double SideA { get; set; }
+        public double SideB { get; set; }
+        public double SideC { get; set; }
+        IAreaCalculator _IAreaCalculator;
+        IPerimeterCalculator _IPerimeterCalculator;
 
-        public Triangle(double sidea, double sideb, double sidec) : base("Треугольник")
+        public Triangle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double sidea, double sideb, double sidec) : base("Треугольник")
         {
+            _IAreaCalculator = iAreaCalculator;
+            _IPerimeterCalculator = iPerimeterCalculator;
             SideA = sidea;
             SideB = sideb;
             SideC = sidec;
         }
         public override double Area()
         {
-            if (SideA > 0 && SideB > 0 && SideC > 0 &&
-                SideA + SideB > SideC &&
-                SideA + SideC > SideB &&
-                SideB + SideC > SideA)
-            {
-                var p = (SideA + SideB + SideC) / 2;
-                return Math.Sqrt(p * (p - SideA) * (p - SideB) * (p - SideC));
-            }
-            else
-            {
-                return 0;
-            }
+            return _IAreaCalculator.CalculateArea(this);
         }
 
         public override double Perimeter()
         {
-            return SideA + SideB + SideC;
+            return _IPerimeterCalculator.CalculatePerimeter(this);
         }
 
         public override void PrintInfo()
@@ -151,9 +153,82 @@ namespace Shape_Calculator
         }
     }
 
+    public class CircleAreaCalculator: IAreaCalculator
+    {
+        public double CalculateArea(Shape shape)
+        {
+            return Math.PI * (((Circle)shape).Radius * ((Circle)shape).Radius);
+        }
+    }
+
+    public class CirclePerimeterCalculator : IPerimeterCalculator
+    {
+        public double CalculatePerimeter(Shape shape)
+        {
+            return (2 * Math.PI) * ((Circle)shape).Radius;
+        }
+    }
+
+
+
+    public class RectangleAreaCalculator : IAreaCalculator
+    {
+        public double CalculateArea(Shape shape)
+        {
+            return ((Rectangle)shape).Width * ((Rectangle)shape).Height;
+        }
+    }
+
+    public class RectanglePerimeterCalculator : IPerimeterCalculator
+    {
+        public double CalculatePerimeter(Shape shape)
+        {
+            return 2 * (((Rectangle)shape).Width + ((Rectangle)shape).Height);
+        }
+    }
+
+
+    public class TriangleAreaCalculator : IAreaCalculator
+    {
+        public double CalculateArea(Shape shape)
+        {
+            if (((Triangle)shape).SideA > 0 && ((Triangle)shape).SideB > 0 && ((Triangle)shape).SideC > 0 &&
+                ((Triangle)shape).SideA + ((Triangle)shape).SideB > ((Triangle)shape).SideC &&
+                ((Triangle)shape).SideA + ((Triangle)shape).SideC > ((Triangle)shape).SideB &&
+                ((Triangle)shape).SideB + ((Triangle)shape).SideC > ((Triangle)shape).SideA)
+            {
+                var p = (((Triangle)shape).SideA  + ((Triangle)shape).SideB + ((Triangle)shape).SideC) / 2;
+                return Math.Sqrt(p * (p - ((Triangle)shape).SideA) * (p - ((Triangle)shape).SideB) * (p - ((Triangle)shape).SideC));
+            }
+            else
+            {
+                return 0;
+            }
+        }
+    }
+
+
+    public class TrianglePerimeterCalculator : IPerimeterCalculator
+    {
+        public double CalculatePerimeter(Shape shape)
+        {
+            return ((Triangle)shape).SideA + ((Triangle)shape).SideB + ((Triangle)shape).SideC;
+        }
+    }
+
 
     public interface IDrawable
     {
         public void Draw();
+    }
+
+    public interface IAreaCalculator
+    {
+        public double CalculateArea(Shape shape);
+    }
+
+    public interface IPerimeterCalculator
+    {
+        public double CalculatePerimeter(Shape shape);
     }
 }

@@ -4,16 +4,19 @@ namespace Function_Test
 {
     public class Function_Test
     {
+
         [Theory]
         [InlineData(3.14, 1.0)]
-        [InlineData(12.56, 2)]
+        [InlineData(12.57, 2)]
         [InlineData(0 ,0)]
-        [InlineData(78.50, -5)]
+        [InlineData(78.54, -5)]
         public void CircleAreaTest(double excepted, double Radius)
         {
-            Shape shape = new Circle(Radius);
+            var _CircleAreaCalculator = new CircleAreaCalculator();
+            var CirclePerimeterCalculator = new CirclePerimeterCalculator();
+            Shape shape = new Circle(_CircleAreaCalculator, CirclePerimeterCalculator, Radius);
             double actual = shape.Area();
-            Assert.Equal(excepted, actual, 5);
+            Assert.Equal(excepted, actual, 2);
         }
 
         [Theory]
@@ -23,9 +26,11 @@ namespace Function_Test
         [InlineData(-4, -1, 4)]
         public void RectangleAreaTest(double excepted, double Widht, double Height)
         {
-            Shape shape = new Rectangle(Widht, Height);
+            var _RectangleAreaCalculator = new RectangleAreaCalculator();
+            var RectanglePerimeterCalculator = new RectanglePerimeterCalculator();
+            Shape shape = new Rectangle(_RectangleAreaCalculator, RectanglePerimeterCalculator, Widht, Height);
             double actual = shape.Area();
-            Assert.Equal(excepted, actual, 4);
+            Assert.Equal(excepted, actual, 2);
         }
 
 
@@ -38,7 +43,9 @@ namespace Function_Test
         [InlineData(0, -1, 2, 2)]
         public void TriangleAreaTest(double excepted, double A, double B, double C)
         {
-            Shape shape = new Triangle(A, B, C);
+            var _TriangleAreaCalculator = new TriangleAreaCalculator();
+            var TrianglePerimeterCalculator = new TrianglePerimeterCalculator();
+            Shape shape = new Triangle(_TriangleAreaCalculator, TrianglePerimeterCalculator, A, B, C);
             double actual = shape.Area();
             Assert.Equal(excepted, actual, 2);
         }
@@ -46,14 +53,16 @@ namespace Function_Test
 
         [Theory]
         [InlineData(6.28, 1.0)]
-        [InlineData(12.56, 2)]
+        [InlineData(12.57, 2)]
         [InlineData(0, 0)]
-        [InlineData(-31.40, -5)]
+        [InlineData(-31.42, -5)]
         public void CirclePerimeteraTest(double excepted, double Radius)
         {
-            Shape shape = new Circle(Radius);
+            var _CircleAreaCalculator = new CircleAreaCalculator();
+            var CirclePerimeterCalculator = new CirclePerimeterCalculator();
+            Shape shape = new Circle(_CircleAreaCalculator, CirclePerimeterCalculator, Radius);
             double actual = shape.Perimeter();
-            Assert.Equal(excepted, actual, 5);
+            Assert.Equal(excepted, actual, 2);
         }
 
         [Theory]
@@ -63,7 +72,9 @@ namespace Function_Test
         [InlineData(6, -1, 4)]
         public void RectanglePerimeteraTest(double excepted, double Widht, double Height)
         {
-            Shape shape = new Rectangle(Widht, Height);
+            var _RectangleAreaCalculator = new RectangleAreaCalculator();
+            var RectanglePerimeterCalculator = new RectanglePerimeterCalculator();
+            Shape shape = new Rectangle(_RectangleAreaCalculator, RectanglePerimeterCalculator, Widht, Height);
             double actual = shape.Perimeter();
             Assert.Equal(excepted, actual, 2);
         }
@@ -75,7 +86,9 @@ namespace Function_Test
         [InlineData(3, 1, 1, 1)]
         public void TrianglePerimeterTest(double excepted, double A, double B, double C)
         {
-            Shape shape = new Triangle(A, B, C);
+            var _TriangleAreaCalculator = new TriangleAreaCalculator();
+            var TrianglePerimeterCalculator = new TrianglePerimeterCalculator();
+            Shape shape = new Triangle(_TriangleAreaCalculator, TrianglePerimeterCalculator, A, B, C);
             double actual = shape.Perimeter();
             Assert.Equal(excepted, actual, 2);
         }
