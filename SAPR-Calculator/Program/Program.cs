@@ -8,6 +8,7 @@ string mainpath = Path.Combine(mainfile);
 string errorpath = Path.Combine(errorfile);
 
 List<Shape> list = new List<Shape>(){
+    ShapeFactory.Create("circle", [-5])
 };
 
 async Task<string[]> ReadFileAsync()

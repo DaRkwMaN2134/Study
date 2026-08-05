@@ -121,8 +121,18 @@ namespace Shape_Calculator
         }
         public override double Area()
         {
-            var p = (SideA + SideB + SideC) / 2;
-            return Math.Sqrt(p * (p - SideA) * (p - SideB) * (p - SideC));
+            if (SideA > 0 && SideB > 0 && SideC > 0 &&
+                SideA + SideB > SideC &&
+                SideA + SideC > SideB &&
+                SideB + SideC > SideA)
+            {
+                var p = (SideA + SideB + SideC) / 2;
+                return Math.Sqrt(p * (p - SideA) * (p - SideB) * (p - SideC));
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         public override double Perimeter()
