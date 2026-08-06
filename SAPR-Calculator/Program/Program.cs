@@ -1,10 +1,11 @@
 ﻿using Shape_Calculator;
 using System.IO;
 
+DateTime startTime = DateTime.Now;
+await Logger.Instance.LogAsync("Программа запущена\n");
+
 string mainfile = "shapes.txt";
-string errorfile = "errors.log";
 string mainpath = Path.Combine(mainfile);
-string errorpath = Path.Combine(errorfile);
 
 List<Shape> list = new List<Shape>(){};
 
@@ -38,7 +39,7 @@ async Task<string[]> ReadFileAsync()
     }
 }
 
-void ShapeData(string[] lines)
+async Task ShapeDataAsync(string[] lines)
 {
     if (lines == null) return;
 
@@ -67,11 +68,12 @@ void ShapeData(string[] lines)
                     var CirclePerimeterCalculator = new CirclePerimeterCalculator();
                     if (radius > 0)
                     {
+                        await Logger.Instance.LogAsync($"Создана фигура: {type}, Радиус: {parts[1]}\n");
                         list.Add(ShapeFactory.Create("circle", _CircleAreaCalculator, CirclePerimeterCalculator, [radius]));
                     }
                     else
                     {
-                        File.AppendAllText(errorpath, $"Фигура: {type}, Радиус: {parts[1]}\n");
+                        await Logger.Instance.LogErrorAsync($"Фигура: {type}, Радиус: {parts[1]}\n");
                         Console.WriteLine("Неверные параметры для круга");
                     }
                 }
@@ -93,11 +95,12 @@ void ShapeData(string[] lines)
                     var RectanglePerimeterCalculator = new RectanglePerimeterCalculator();
                     if (width > 0 && height > 0)
                     {
+                        await Logger.Instance.LogAsync($"Создана фигура: {type}, Ширина: {parts[1]}, Высота: {parts[2]}\n");
                         list.Add(ShapeFactory.Create("rectangle", _RectangleAreaCalculator, RectanglePerimeterCalculator, [width, height]));
                     }
                     else
                     {
-                        File.AppendAllText(errorpath, $"Фигура: {type}, Ширина: {parts[1]}, Высота: {parts[2]}\n");
+                        await Logger.Instance.LogErrorAsync($"Фигура: {type}, Ширина: {parts[1]}, Высота: {parts[2]}\n");
                         Console.WriteLine("Неверные параметры для прямоугольника");
                     }
                 }
@@ -119,11 +122,12 @@ void ShapeData(string[] lines)
                     var TrianglePerimeterCalculator = new TrianglePerimeterCalculator();
                     if (sidea + sideb > sidec && sidea + sidec > sideb && sideb + sidec > sidea)
                     {
+                        await Logger.Instance.LogAsync($"Создана фигура: {type}, Стороны: {sidea}, {sideb}, {sidec}\n");
                         list.Add(ShapeFactory.Create("triangle", _TriangleAreaCalculator, TrianglePerimeterCalculator, [sidea, sideb, sidec]));
                     }
                     else
                     {
-                        File.AppendAllText(errorpath, $"Фигура: {type}, Стороны: {sidea}, {sideb}, {sidec}\n");
+                        await Logger.Instance.LogErrorAsync($"Фигура: {type}, Стороны: {sidea}, {sideb}, {sidec}\n");
                         Console.WriteLine("Неравенство треугольника не выполняется");
                     }
                 }
@@ -144,7 +148,7 @@ void ShapeData(string[] lines)
 string[] lines = await ReadFileAsync();
 if (lines != null)
 {
-    ShapeData(lines);
+    await ShapeDataAsync(lines);
 }
 else
 {
@@ -158,5 +162,39 @@ foreach (var shape in list)
     if (shape is IDrawable Draw)
     {
         Draw.Draw();
+    }
+}
+
+DateTime endTime = DateTime.Now;
+TimeSpan duration = endTime - startTime;
+await Logger.Instance.LogAsync($"Время выполнения: {duration.TotalMilliseconds} мс\n");
+
+
+public class Logger
+{
+    private static Logger _instance;
+    private Logger() { }
+    public static Logger Instance
+    {
+        get
+        {
+            if (_instance == null)
+                _instance = new Logger(); // создаётся при первом обращении
+            return _instance;
+        }
+    }
+
+    public async Task LogAsync(string message)
+    {
+        DateTime localTime = DateTime.Now;
+        string logfile = "log.txt";
+        await File.AppendAllTextAsync(logfile, $" [{localTime}] INFO:{message}");
+    }
+
+    public async Task LogErrorAsync(string message)
+    {
+        DateTime localTime = DateTime.Now;
+        string errorfile = "errors.log";
+        await File.AppendAllTextAsync(errorfile, $" [{localTime}] ERROR:{message}");
     }
 }
