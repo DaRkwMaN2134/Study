@@ -1,5 +1,5 @@
 ﻿using Shape_Calculator;
-using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace Shape_Calculator
 {
@@ -26,10 +26,15 @@ namespace Shape_Calculator
     }
 
 
+
+    [JsonDerivedType(typeof(Circle), typeDiscriminator: "circle")]
+    [JsonDerivedType(typeof(Rectangle), typeDiscriminator: "rectangle")]
+    [JsonDerivedType(typeof(Triangle), typeDiscriminator: "triangle")]
     public abstract class Shape
     {
-        string Name { get; set; }
+        public string Name { get; set; }
 
+        public Shape() { }
         public Shape(string name)
         {
             Name = name;
@@ -50,7 +55,11 @@ namespace Shape_Calculator
         public double Radius { get; set; }
         IAreaCalculator _IAreaCalculator;
         IPerimeterCalculator _IPerimeterCalculator;
-
+        public Circle()
+        {
+            _IAreaCalculator = new CircleAreaCalculator();
+            _IPerimeterCalculator = new CirclePerimeterCalculator();
+        }
         public Circle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double radius) : base("Круг")
         {
             Radius = radius;
@@ -87,6 +96,11 @@ namespace Shape_Calculator
         IAreaCalculator _IAreaCalculator;
         IPerimeterCalculator _IPerimeterCalculator;
 
+        public Rectangle()
+        {
+            _IAreaCalculator = new RectangleAreaCalculator();
+            _IPerimeterCalculator = new RectanglePerimeterCalculator();
+        }
         public Rectangle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double width, double height) : base("Прямоугольник")
         {
             _IAreaCalculator = iAreaCalculator;
@@ -124,6 +138,11 @@ namespace Shape_Calculator
         IAreaCalculator _IAreaCalculator;
         IPerimeterCalculator _IPerimeterCalculator;
 
+        public Triangle()
+        {
+            _IAreaCalculator = new TriangleAreaCalculator();
+            _IPerimeterCalculator = new TrianglePerimeterCalculator();
+        }
         public Triangle(IAreaCalculator iAreaCalculator, IPerimeterCalculator iPerimeterCalculator, double sidea, double sideb, double sidec) : base("Треугольник")
         {
             _IAreaCalculator = iAreaCalculator;
