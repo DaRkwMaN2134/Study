@@ -2,13 +2,13 @@
 
 namespace Function_Test
 {
-    public class Function_Test
+    public class Calculator_Test
     {
 
         [Theory]
         [InlineData(3.14, 1.0)]
         [InlineData(12.57, 2)]
-        [InlineData(0 ,0)]
+        [InlineData(0, 0)]
         [InlineData(78.54, -5)]
         public void CircleAreaTest(double excepted, double Radius)
         {
@@ -93,5 +93,87 @@ namespace Function_Test
             Assert.Equal(excepted, actual, 2);
         }
 
+    }
+
+    public class ShapeRepository_Test
+    {
+        public static IEnumerable<object[]> GetShapeData()
+        {
+            yield return new object[] { "circle", new double[] { 30 }, Math.PI * 30 * 30 };
+            yield return new object[] { "triangle", new double[] { 3, 3, 3 }, 3.897 };
+        }
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void AddFunctionTest(string type, double[] values, double expected)
+        {
+            ShapeRepository repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            var action = repository.Count();
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+            Assert.NotEqual(action, repository.Count());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void RemoveAtValidFunctionTest(string type, double[] values, double expected)
+        {
+            ShapeRepository repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+            var action = repository.Count();
+            repository.RemoveAt(action-1);
+            var locexpected = repository.Count();
+            Assert.NotEqual(action, locexpected);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void RemoveAtNotValidFunctionTest(string type, double[] values, double expected)
+        {
+            ShapeRepository repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+            var action = repository.Count();
+            repository.RemoveAt(100);
+            var locexpected = repository.Count();
+            Assert.Equal(action, locexpected);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void GetAllFunctionTest(string type, double[] values, double expected)
+        {
+            ShapeRepository repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+            var all = repository.GetAll();
+            Assert.Single(all);
+            Assert.True(repository.GetAll().Count() == 1);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void GetTotalAreaFunctionTest(string type, double[] values, double expected)
+        {
+            var repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            double action = 0;
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+             action = repository.GetTotalArea();
+            Assert.Equal(expected, action, 3);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetShapeData))]
+        public void ClearFunctionTest(string type, double[] values, double expected)
+        {
+            ShapeRepository repository = new ShapeRepository();
+            var (area, per) = ShapeLibrary.Get(type);
+            repository.Add(ShapeFactory.Create(type, area, per, values));
+            repository.Clear();
+            var action = repository.Count();
+            Assert.Equal(0, action);
+        }
     }
 }

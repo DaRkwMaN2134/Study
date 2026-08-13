@@ -40,7 +40,7 @@ while (true)
         case "1":
             Console.WriteLine("Какую фигуру вы хотите добавить? (на английском)");
             var type = Console.ReadLine();
-            var (area, per) = ShapeCalculator.Get(type);
+            var (area, per) = ShapeLibrary.Get(type);
             switch (type)
             {
                 case "circle":

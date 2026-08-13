@@ -15,11 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Program\Program.csproj" />
-    <ProjectReference Include="..\Shape_Calculator\Shape_Calculator\Shape_Calculator.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

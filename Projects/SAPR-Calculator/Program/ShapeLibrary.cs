@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-public static class ShapeCalculator
+public static class ShapeLibrary
 {
     public static (IAreaCalculator Area, IPerimeterCalculator Perimeter) Get(string type)
     {
