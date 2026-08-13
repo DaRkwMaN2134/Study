@@ -1,6 +1,5 @@
 ﻿using Shape_Calculator;
 using System.IO;
-using System.Runtime.ConstrainedExecution;
 
 
 var repository = new ShapeRepository();
@@ -9,26 +8,14 @@ var serializer = new JsonShapeSerializer();
 
 var logger = Logger.Instance;
 
-(IAreaCalculator Area, IPerimeterCalculator Perimeter) ShapeCalculator(string type)
+void PrintShapes()
 {
-    switch (type)
+    var all = repository.GetAll().ToList();
+    for (int i = 0; i < all.Count(); i++)
     {
-        case "circle":
-            var _CircleAreaCalculator = new CircleAreaCalculator();
-            var CirclePerimeterCalculator = new CirclePerimeterCalculator();
-            return (_CircleAreaCalculator, CirclePerimeterCalculator);
-        case "rectangle":
-            var _RectangleAreaCalculator = new RectangleAreaCalculator();
-            var RectanglePerimeterCalculator = new RectanglePerimeterCalculator();
-            return (_RectangleAreaCalculator, RectanglePerimeterCalculator);
-        case "triangle":
-            var _TriangleAreaCalculator = new TriangleAreaCalculator();
-            var TrianglePerimeterCalculator = new TrianglePerimeterCalculator();
-            return (_TriangleAreaCalculator, TrianglePerimeterCalculator);
-        default:
-            return (null, null);
+        Console.Write($"{i + 1}. ");
+        all[i].PrintInfo();
     }
-
 }
 
 await Logger.Instance.LogAsync("Программа запущена");
@@ -53,54 +40,74 @@ while (true)
         case "1":
             Console.WriteLine("Какую фигуру вы хотите добавить? (на английском)");
             var type = Console.ReadLine();
-            var (area, per) = ShapeCalculator(type);
+            var (area, per) = ShapeCalculator.Get(type);
             switch (type)
             {
                 case "circle":
-                    Console.WriteLine("Введите радиус");
-                    var radiusInput = Console.ReadLine();
-                    if(double.TryParse(radiusInput, out double rad))
+                    while (true)
                     {
-                        repository.Add(ShapeFactory.Create(type, area, per, [rad]));
-                        break;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Неверные параметры");
+                        Console.WriteLine("Введите радиус");
+                        var radiusInput = Console.ReadLine();
+                        if(double.TryParse(radiusInput, out double rad))
+                        {
+                            repository.Add(ShapeFactory.Create(type, area, per, [rad]));
+                            await Logger.Instance.LogAsync($"Добавлена фигура {type} с параметрами {rad}");
+                            break;
+                        }
+                        else
+                        {
+                            await Logger.Instance.LogErrorAsync($"Неверные параметры при добавлении фигуры {type}");
+                            Console.WriteLine("Неверные параметры");
+                            continue;
+                        }
+                        
                     }
                     break;
 
                 case "rectangle":
-                    Console.WriteLine("Введите ширину и высоту (каждую в новую строчку)");
-                    var widthInput = Console.ReadLine();
-                    var heightInput = Console.ReadLine();
-                    if (double.TryParse(widthInput, out double width) && double.TryParse(heightInput, out double height))
+                    while (true)
                     {
-                        repository.Add(ShapeFactory.Create(type, area, per, [width, height]));
-                        break;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Неверные параметры");
+                        Console.WriteLine("Введите ширину и высоту (каждую в новую строчку)");
+                        var widthInput = Console.ReadLine();
+                        var heightInput = Console.ReadLine();
+                        if (double.TryParse(widthInput, out double width) && double.TryParse(heightInput, out double height))
+                        {
+                            await Logger.Instance.LogAsync($"Добавлена фигура {type} с параметрами {width}x{height}");
+                            repository.Add(ShapeFactory.Create(type, area, per, [width, height]));
+                            break;
+                        }
+                        else
+                        {
+                            await Logger.Instance.LogErrorAsync($"Неверные параметры при добавлении фигуры {type}");
+                            Console.WriteLine("Неверные параметры");
+                            continue;
+                        }
                     }
                     break;
 
                 case "triangle":
-                    Console.WriteLine("Введите длину сторон A,B,C (каждую в новую строчку)");
-                    var aInput = Console.ReadLine();
-                    var bInput = Console.ReadLine();
-                    var cInput = Console.ReadLine();
-                    if (double.TryParse(aInput, out double A) && double.TryParse(bInput, out double B) && double.TryParse(cInput, out double C))
+                    while (true)
                     {
-                        repository.Add(ShapeFactory.Create(type, area, per, [A, B, C]));
-                        break;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Неверные параметры");
+                        Console.WriteLine("Введите длину сторон A,B,C (каждую в новую строчку)");
+                        var aInput = Console.ReadLine();
+                        var bInput = Console.ReadLine();
+                        var cInput = Console.ReadLine();
+                        if (double.TryParse(aInput, out double A) && double.TryParse(bInput, out double B) && double.TryParse(cInput, out double C))
+                        {
+                            await Logger.Instance.LogAsync($"Добавлена фигура {type} с параметрами {A}, {B}, {C}");
+                            repository.Add(ShapeFactory.Create(type, area, per, [A, B, C]));
+                            break;
+                        }
+                        else
+                        {
+                            await Logger.Instance.LogErrorAsync($"Неверные параметры при добавлении фигуры {type}");
+                            Console.WriteLine("Неверные параметры");
+                            continue;
+                        }
                     }
                     break;
                 default:
+                    await Logger.Instance.LogErrorAsync($"Неверные параметры при добавлении фигуры {type}");
                     Console.WriteLine("Такой фигуры не существует");
                     break;
             }
@@ -109,19 +116,16 @@ while (true)
             if(repository.Count() != 0)
             {
                 Console.WriteLine("Какую фигуру вы хотите удалить?");
-                var all = repository.GetAll().ToList();
-                for (int i = 0; i < all.Count(); i++)
-                {
-                    Console.Write($"{i+1}. ");
-                    all[i].PrintInfo();
-                }
+                PrintShapes();
                 var indexInput = Console.ReadLine();
                 if (int.TryParse(indexInput, out int index))
                 {
+                    await Logger.Instance.LogAsync($"Удалена фигура с индексом {index}");
                     repository.RemoveAt(index - 1);
                 }
                 else
                 {
+                    await Logger.Instance.LogErrorAsync($"Неверные параметры при удалении фигуры: {index}");
                     Console.WriteLine("Неверный индекс");
                 }
 
@@ -134,12 +138,7 @@ while (true)
         case "3":
             if (repository.Count() != 0)
             {
-                var all = repository.GetAll().ToList();
-                for (int i = 0; i < all.Count(); i++)
-                {
-                    Console.Write($"{i + 1}. ");
-                    all[i].PrintInfo();
-                }
+                PrintShapes();
             }
             else
             {
@@ -148,6 +147,7 @@ while (true)
             break;
         case "4":
             await serializer.SaveAsync("shapes.json", repository.GetAll());
+            await Logger.Instance.LogAsync("Сохранение фигур в JSON");
             Console.WriteLine("Сохранение фигур");
             break;
         case "5":
@@ -157,11 +157,13 @@ while (true)
             {
                 repository.Add(shape);
             }
+            await Logger.Instance.LogAsync($"Загружено {repository.Count()} фигур из JSON");
             Console.WriteLine($"Загружено {loaded.Count()} фигур");
             break;
         case "6":
             if (repository.Count() != 0)
             {
+                await Logger.Instance.LogAsync($"Общая площадь: {repository.Count()}");
                 Console.WriteLine(repository.GetTotalArea());
             }
             else
@@ -170,7 +172,11 @@ while (true)
             }
             break;
         case "7":
+            await Logger.Instance.LogAsync("Программа завершена");
             return;
+        default:
+            Console.WriteLine("Нет такой команды");
+            break;
     }
 }
 
