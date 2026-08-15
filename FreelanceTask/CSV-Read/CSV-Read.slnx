@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="File-IO/File-IO.csproj" />
+  <Project Path="Start/Start.csproj" />
+</Solution>
