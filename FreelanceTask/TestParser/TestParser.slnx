@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DataModel/DataModel.csproj" />
+  <Project Path="FileIO/FileIO.csproj" />
+  <Project Path="Parser/Parser.csproj" />
+  <Project Path="Start/Start.csproj" />
+</Solution>
