@@ -28,10 +28,9 @@ namespace Parser
             }
         }
 
-
-        public async Task<string> HTTPBookstoscrapeRequestAsync()
+        public async Task<string> HTTPBookstoscrapeRequestAsync(string url)
         {
-            string url = "https://books.toscrape.com/";
+            //string url = "https://books.toscrape.com/catalogue/page-1.html";
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -39,7 +38,7 @@ namespace Parser
                 var response = await client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 html = await response.Content.ReadAsStringAsync();
-                Console.WriteLine("Успешно! Длина полученного HTML-кода: " + html.Length);
+                //Console.WriteLine("Успешно! Длина полученного HTML-кода: " + html.Length);
                 //Console.WriteLine(string.Join(",", html));
                 return html;
             }
