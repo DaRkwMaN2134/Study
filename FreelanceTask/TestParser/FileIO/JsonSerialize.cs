@@ -6,17 +6,27 @@ namespace FileIO
 {
     public class JsonSerialize
     {
-        public async Task<Post> JsonWriteAsync(string filepath, string html)
+        public async Task<Post> JsonPostWriteAsync(string filepath, string jsonString)
         {
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             };
-            Post posts = JsonSerializer.Deserialize<Post>(html, options);
+            Post posts = JsonSerializer.Deserialize<Post>(jsonString, options);
             string json = JsonSerializer.Serialize(posts, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(filepath, json);
             return posts;
         }
-    }
-}
 
+        public async Task JsonBookWriteAsync(string filepath, List<Book> books)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            string json = JsonSerializer.Serialize(books, options);
+            await File.WriteAllTextAsync(filepath, json);
+        }
+        }
+}

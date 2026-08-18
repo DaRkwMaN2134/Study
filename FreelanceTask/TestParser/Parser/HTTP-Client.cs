@@ -1,22 +1,22 @@
 ﻿using System.Net;
-using System.Net.Http;
-using System.Text.Json;
 using DataModel;
 namespace Parser
 {
     public class HTTP_Client
     {
-        HttpClient client = new HttpClient();
+        static HttpClient client = new HttpClient();
         public string html = "";
-        string url = "https://jsonplaceholder.typicode.com/todos/1";
-        public async Task<string> HTTPRequestAsync()
+        public async Task<string> HTTPJsonplaceholderRequestAsync()
         {
+            string url = "https://jsonplaceholder.typicode.com/todos/1";
             try
             {
+
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 var response = await client.SendAsync(request);
-                html = await client.GetStringAsync(url);
+                response.EnsureSuccessStatusCode();
+                html = await response.Content.ReadAsStringAsync();
                 Console.WriteLine("Успешно! Длина полученного HTML-кода: " + html.Length);
                 Console.WriteLine(string.Join(",", html));
                 return html;
@@ -26,7 +26,29 @@ namespace Parser
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 return null;
             }
-            
+        }
+
+
+        public async Task<string> HTTPBookstoscrapeRequestAsync()
+        {
+            string url = "https://books.toscrape.com/";
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                html = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Успешно! Длина полученного HTML-кода: " + html.Length);
+                //Console.WriteLine(string.Join(",", html));
+                return html;
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+                return null;
+            }
+
         }
     }
 }
