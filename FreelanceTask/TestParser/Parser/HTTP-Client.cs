@@ -47,7 +47,6 @@ namespace Parser
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 return null;
             }
-
         }
     }
 }
