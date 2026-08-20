@@ -1,17 +1,18 @@
-﻿using System.Net;
-using DataModel;
+﻿using DataModel;
+using HtmlAgilityPack;
+using System.Net;
 namespace Parser
 {
     public class HTTP_Client
     {
         static HttpClient client = new HttpClient();
-        public string html = "";
+        
         public async Task<string> HTTPJsonplaceholderRequestAsync()
         {
+            string html = "";
             string url = "https://jsonplaceholder.typicode.com/todos/1";
             try
             {
-
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 var response = await client.SendAsync(request);
@@ -37,7 +38,7 @@ namespace Parser
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 var response = await client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
-                html = await response.Content.ReadAsStringAsync();
+                var html = await response.Content.ReadAsStringAsync();
                 //Console.WriteLine("Успешно! Длина полученного HTML-кода: " + html.Length);
                 //Console.WriteLine(string.Join(",", html));
                 return html;
@@ -47,6 +48,85 @@ namespace Parser
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 return null;
             }
+        }
+
+        public async Task HTTPLoginRequestAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var handler = new HttpClientHandler();
+
+            handler.CookieContainer = new CookieContainer();
+
+            client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+            client.DefaultRequestHeaders.Add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+            client.DefaultRequestHeaders.Add("Referer", "https://the-internet.herokuapp.com/login");
+
+
+            var loginData = new Dictionary<string, string>
+            {
+                { "username", "tomsmith" },
+                { "password", "SuperSecretPassword!" }
+            };
+
+            var content = new FormUrlEncodedContent(loginData);
+            var response = await client.PostAsync("https://the-internet.herokuapp.com/authenticate", content);
+
+            string html = await client.GetStringAsync("https://the-internet.herokuapp.com/secure");
+
+
+
+            Console.WriteLine($"Вывод для responce: \n {response} \n");
+
+            Console.WriteLine($"Вывод для html: \n {html}");
+        }
+
+        public async Task HTTPCSRFRequestAsync(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var handler = new HttpClientHandler();
+            handler.CookieContainer = new CookieContainer();
+            client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+            client.DefaultRequestHeaders.Add("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+            client.DefaultRequestHeaders.Add("Referer", "http://quotes.toscrape.com/login");
+
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var loginHtml = await response.Content.ReadAsStringAsync();
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(loginHtml);
+            var CSRFNode = doc.DocumentNode.SelectSingleNode("//input[@name='csrf_token']");
+            string currentCSRF = CSRFNode.GetAttributeValue("value", "");
+            string CSRF = "";
+            if (!string.IsNullOrEmpty(currentCSRF))
+            {
+                CSRF = currentCSRF?.Trim() ?? "CSRF отсутствует";
+            }
+
+
+
+            var loginData = new Dictionary<string, string>
+            {
+                { "username", "admin" },
+                { "password", "password!" },
+                { "csrf_token", CSRF}
+            };
+            var enterContent = new FormUrlEncodedContent(loginData);
+            var enterResponse = await client.PostAsync("http://quotes.toscrape.com/login", enterContent);
+            string enterHtml = await client.GetStringAsync("http://quotes.toscrape.com/");
+
+            Console.WriteLine($"Вывод для responce: \n {enterResponse} \n");
+            Console.WriteLine(enterHtml);
+            var cookies = handler.CookieContainer.GetCookies(new Uri("http://quotes.toscrape.com"));
+            foreach (Cookie cookie in cookies)
+            {
+                Console.WriteLine($"{cookie.Name} = {cookie.Value}");
+            }
+            //Console.WriteLine(CSRF);
         }
     }
 }
