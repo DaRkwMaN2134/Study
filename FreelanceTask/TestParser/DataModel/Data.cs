@@ -35,6 +35,19 @@
             ReviewsCount = reviewscount;
             DetailUrl = detailurl;
         }
+    }
 
+    public class Quote
+    {
+        public string Text { get; set; }
+        public string Author { get; set; }
+        public List<string> Tags { get; set; }
+        public Quote() { }
+        public Quote(string text, string author, List<string> tags)
+        {
+            Text = text;
+            Author = author;
+            Tags = tags;
+        }
     }
 }

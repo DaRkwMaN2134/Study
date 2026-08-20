@@ -2,7 +2,6 @@
 using FileIO;
 using HtmlAgilityPack;
 using Parser;
-using static System.Net.WebRequestMethods;
 
 class Program()
 {
@@ -11,6 +10,7 @@ class Program()
     HTML_Parser htmlParser = new HTML_Parser();
     string file1 = "post1.json";
     string file2 = "post2.json";
+    string file3 = "QuoteFromQuotestoscrapecom.json";
 
     async Task pars1Async()
     {
@@ -19,9 +19,6 @@ class Program()
         Console.WriteLine($"Title: {post1.Title}");
         Console.WriteLine($"Completed: {post1.Completed}\n\n");
     }
-
-
-
 
     async Task pars2Async()
     {
@@ -102,13 +99,21 @@ class Program()
     {
         await clientRequest.HTTPCSRFRequestAsync("http://quotes.toscrape.com/login");
     }
-    static async Task Main()
+
+    async Task pars5Async()
+    {
+        List<Quote> quoteList = new List<Quote>();
+        quoteList = await clientRequest.ParseQuotesWithScrollAsync();
+        await jsonInput.JsonQuoteWriteAsync(file3, quoteList);
+    }
+    static public async Task Main()
     {
         Program start = new Program();
-        await start.pars1Async();
-        await start.pars2Async();
-        await start.pars3Async();
-        await start.pars4Async();
+        //await start.pars1Async();
+        //await start.pars2Async();
+        //await start.pars3Async();
+        //await start.pars4Async();
+        await start.pars5Async();
 
         Console.WriteLine("\nДля выхода нажмите любую кнопку");
         Console.ReadKey();

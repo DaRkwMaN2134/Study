@@ -28,5 +28,16 @@ namespace FileIO
             string json = JsonSerializer.Serialize(books, options);
             await File.WriteAllTextAsync(filepath, json);
         }
+
+        public async Task JsonQuoteWriteAsync(string filepath, List<Quote> quotes)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+            string json = JsonSerializer.Serialize(quotes, options);
+            await File.WriteAllTextAsync(filepath, json);
         }
+    }
 }
