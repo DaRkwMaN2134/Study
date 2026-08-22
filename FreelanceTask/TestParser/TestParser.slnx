@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="DataBase/DataBase.csproj" Id="3939c23a-dfaa-4617-b354-9e11718ecd8a" />
   <Project Path="DataModel/DataModel.csproj" />
   <Project Path="FileIO/FileIO.csproj" />
   <Project Path="Parser/Parser.csproj" />

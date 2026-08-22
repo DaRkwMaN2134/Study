@@ -2,12 +2,14 @@
 using FileIO;
 using HtmlAgilityPack;
 using Parser;
+using DataBase;
 
 class Program()
 {
     HTTP_Client clientRequest = new HTTP_Client();
     JsonSerialize jsonInput = new JsonSerialize();
     HTML_Parser htmlParser = new HTML_Parser();
+    AppDbContext db = new AppDbContext();
     string file1 = "post1.json";
     string file2 = "post2.json";
     string file3 = "QuoteFromQuotestoscrapecom.json";
@@ -104,8 +106,22 @@ class Program()
     {
         List<Quote> quoteList = new List<Quote>();
         quoteList = await clientRequest.ParseQuotesWithScrollAsync();
+        db.Quotes.AddRange(quoteList);
+        await db.SaveChangesAsync();
+
+        // Все цитаты
+        var allQuotes = db.Quotes.ToList();
+
+        // Фильтрация по автору
+        var einsteinQuotes = db.Quotes.Where(q => q.Author == "Albert Einstein").ToList();
+
+        // Группировка по автору
+        var grouped = db.Quotes.GroupBy(q => q.Author)
+                               .Select(g => new { Author = g.Key, Count = g.Count() })
+                               .ToList();
         await jsonInput.JsonQuoteWriteAsync(file3, quoteList);
     }
+
     static public async Task Main()
     {
         Program start = new Program();
