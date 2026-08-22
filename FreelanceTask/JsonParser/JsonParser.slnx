@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DataLibrary/DataLibrary.csproj" />
+  <Project Path="FileIOLibrary/FileIOLibrary.csproj" />
+  <Project Path="ParserLibrary/ParserLibrary.csproj" />
+  <Project Path="ParserStart/ParserStart.csproj" />
+</Solution>

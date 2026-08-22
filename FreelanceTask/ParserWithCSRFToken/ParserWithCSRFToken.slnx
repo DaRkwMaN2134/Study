@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ParserLibrary/ParserLibrary.csproj" />
+  <Project Path="ParserStart/ParserStart.csproj" />
+</Solution>
