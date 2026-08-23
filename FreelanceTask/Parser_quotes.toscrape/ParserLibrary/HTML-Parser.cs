@@ -93,7 +93,7 @@ namespace ParserLibrary
                 Console.WriteLine($"Общее кол-во цитат: {elements.Count}");
                 foreach (Quote quote in quoteList)
                 {
-                    Console.WriteLine($"Автор: {quote.Author}\n Теги: {string.Join(",", quote.Tags)}\n Текст: {quote.Text} \n");
+                    Console.WriteLine($"Автор: {quote.author}\n Теги: {string.Join(",", quote.tags)}\n Текст: {quote.text} \n");
                 }
             }
             finally

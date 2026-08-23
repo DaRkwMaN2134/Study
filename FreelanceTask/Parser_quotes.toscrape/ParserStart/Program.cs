@@ -19,14 +19,14 @@ class Program()
         List<Quote> quoteList = new List<Quote>();
         quoteList = await clientRequest.ParseQuotesWithScrollAsync();
         db.Database.EnsureCreated();
-        db.Quotes.AddRange(quoteList); // чтобы записать в базу данных, нужно выполнить миграцию dotnet ef migrations add InitialCreate и dotnet ef database update
+        db.quotes.AddRange(quoteList); // чтобы записать в базу данных, нужно выполнить миграцию dotnet ef migrations add InitialCreate и dotnet ef database update
         await db.SaveChangesAsync();
 
-        var allQuotes = db.Quotes.ToList();
+        var allQuotes = db.quotes.ToList();
 
-        var einsteinQuotes = db.Quotes.Where(q => q.Author == "Albert Einstein").ToList();
+        var einsteinQuotes = db.quotes.Where(q => q.author == "Albert Einstein").ToList();
 
-        var grouped = db.Quotes.GroupBy(q => q.Author)
+        var grouped = db.quotes.GroupBy(q => q.author)
                                .Select(g => new { Author = g.Key, Count = g.Count() })
                                .ToList();
         await jsonInput.JsonWriteAsync(file3, quoteList);

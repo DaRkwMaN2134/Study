@@ -2,16 +2,16 @@
 {
     public class Quote
     {
-        public int Id { get; set; }
-        public string Text { get; set; }
-        public string Author { get; set; }
-        public List<string> Tags { get; set; }
+        public int id { get; set; }
+        public string text { get; set; }
+        public string author { get; set; }
+        public List<string> tags { get; set; }
         public Quote() { }
-        public Quote(string text, string author, List<string> tags)
+        public Quote(string Text, string Author, List<string> Tags)
         {
-            Text = text;
-            Author = author;
-            Tags = tags;
+            text = Text;
+            author = Author;
+            tags = Tags;
         }
     }
 }
