@@ -15,8 +15,18 @@ namespace DataBaseLibrary
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
-            string connectionString = config.GetConnectionString("Postgres");
-            optionsBuilder.UseNpgsql(connectionString);
+            string connectionToDataBase = config.GetConnectionString("Postgres");
+            optionsBuilder.UseNpgsql(connectionToDataBase);
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Quote>()
+                .Property(q => q.tags)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
         }
     }
 }
