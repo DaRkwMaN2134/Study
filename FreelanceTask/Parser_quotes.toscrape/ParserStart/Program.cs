@@ -1,9 +1,7 @@
 ﻿using DataBaseLibrary;
 using DataLibrary;
 using FileIOLibrary;
-using Microsoft.EntityFrameworkCore;
 using ParserLibrary;
-using System.Text.Json;
 
 
 
@@ -21,14 +19,6 @@ class Program()
         db.Database.EnsureCreated();
         db.quotes.AddRange(quoteList); // чтобы записать в базу данных, нужно выполнить миграцию dotnet ef migrations add InitialCreate и dotnet ef database update
         await db.SaveChangesAsync();
-
-        var allQuotes = db.quotes.ToList();
-
-        var einsteinQuotes = db.quotes.Where(q => q.author == "Albert Einstein").ToList();
-
-        var grouped = db.quotes.GroupBy(q => q.author)
-                               .Select(g => new { Author = g.Key, Count = g.Count() })
-                               .ToList();
         await jsonInput.JsonWriteAsync(file3, quoteList);
     }
 
