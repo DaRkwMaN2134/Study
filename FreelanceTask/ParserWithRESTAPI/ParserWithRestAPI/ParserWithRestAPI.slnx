@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DataBaseLibrary/DataBaseLibrary.csproj" Id="d4557d98-aa67-4714-b562-3a0fff559688" />
+  <Project Path="DataLibrary/DataLibrary.csproj" Id="653ac290-646f-48fd-822d-50708566fb9f" />
+  <Project Path="ParserStart/ParserStart.csproj" Id="f092113c-6cc4-4cef-9e54-91caab6f9f7d" />
+</Solution>
