@@ -3,6 +3,7 @@ using DataLibrary;
 using FileIOLibrary;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using ParserLibrary;
 
 
@@ -27,6 +28,8 @@ class Program()
         worksheet.Cells[1, 3].Value = "Автор";
         worksheet.Cells[1, 4].Value = "Теги";
 
+        worksheet.View.FreezePanes(2, 1);
+
 
         quoteList = await clientRequest.ParseQuotesWithScrollAsync();
 
@@ -35,7 +38,6 @@ class Program()
         await db.SaveChangesAsync();
 
         await jsonInput.JsonWriteAsync(file3, quoteList);
-
 
         var quotes = db.quotes;
         int row = 2;
@@ -47,7 +49,24 @@ class Program()
             worksheet.Cells[row, 4].Value = string.Join(", ", quote.tags);
             row++;
         }
-        worksheet.Cells[1, 1, row - 1, 4].AutoFitColumns();
+        string[] col = ["ID", "Цитата", "Автор", "Теги"];
+        for (int i = 0; i < col.Length; i++)
+        {
+
+            worksheet.Cells[1, 1, 1, i+1].Style.Font.Bold = true;
+            worksheet.Cells[1, 1, 1, i+1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            worksheet.Cells[1, 1, 1, i+1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+
+            worksheet.Cells[1, 1, row-1, i+1].Style.Border.Top.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+            worksheet.Cells[1, 1, row-1, i+1].Style.Border.Left.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+            worksheet.Cells[1, 1, row-1, i+1].Style.Border.Right.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+            worksheet.Cells[1, 1, row-1, i+1].Style.Border.Bottom.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+
+        }
+        worksheet.Cells[1, 1, row-1, 4].AutoFitColumns();
+        worksheet.Cells[1, 1, row-1, 4].AutoFilter = true;
+        worksheet.Cells[1, 1, 1, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        worksheet.Cells[2, 1, row - 1, 4].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
         await package.SaveAsAsync(new FileInfo("quotes.xlsx"));
     }
 
