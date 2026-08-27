@@ -75,7 +75,7 @@ class Program()
                 break;
             }
         }
-        await jsonInput.JsonBookWriteAsync(file, allBooks);
+        await jsonInput.JsonWriteAsync(file, allBooks);
         Console.WriteLine($"Всего собрано книг: {allBooks.Count}");
     }
 
