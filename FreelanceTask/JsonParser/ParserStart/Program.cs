@@ -1,5 +1,6 @@
-﻿using ParserLibrary;
+﻿using DataLibrary;
 using FileIOLibrary;
+using ParserLibrary;
 
 class Program()
 {
@@ -10,9 +11,19 @@ class Program()
     {
         var jsonString1 = await clientRequest.HTTPRequestAsync();
         var post1 = await jsonInput.JsonWriteAsync(file1, jsonString1);
-        Console.WriteLine($"Title: {post1.Title}");
-        Console.WriteLine($"Completed: {post1.Completed}\n\n");
+
+
+
+        var newPost = new PostRequest
+        {
+            UserId = 1,
+            Title = "My Title",
+            Body = "My Body"
+        };
+        var createdPost = await clientRequest.PostRequestAsync("https://jsonplaceholder.typicode.com/posts", newPost);
+        Console.WriteLine($"Создан пост с Id: {createdPost.id}");
     }
+
 
     static public async Task Main()
     {
