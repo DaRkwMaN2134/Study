@@ -1,6 +1,7 @@
 ﻿using DataLibrary;
 using HtmlAgilityPack;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
@@ -9,46 +10,129 @@ namespace ParserLibrary
 {
     public class Html_Parser
     {
-        public async Task<List<Card>> ParseCategoryAsync(string html)
+        static Http_Client client = new Http_Client();
+        public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl)
         {
-            var doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            var allCardNode = doc.DocumentNode.SelectNodes("//div[contains(@class, 'product-items-block')]//div[contains(@class, 'item-wrap col')]");
-
-            var categoryNameNone = doc.DocumentNode.SelectSingleNode("/html/head/title");
-            var categoryName = categoryNameNone?.InnerText?.Trim();
-
-            List<Card> cards = new List<Card>();
-
-            foreach (var card in allCardNode)
+            var mainDoc = new HtmlDocument();
+            mainDoc.LoadHtml(html);
+            var allCardNode = mainDoc.DocumentNode.SelectNodes("//div[contains(@class, 'product-items-block')]//div[contains(@class, 'item-wrap col')]");
+            if (allCardNode != null)
             {
-                var articleNode = card.SelectSingleNode(".//div[contains(@class, 'product-info')]/a");
-                var pictureUrlNode = card.SelectSingleNode(".//div[contains(@class, 'product-image-block')]//a//div");
-                var priceNode = card.SelectSingleNode(".//div[contains(@class, 'product-info')]//div[contains(@class, 'price-block')]//div[contains(@class, 'price font-body bold')]");
-                //var descriptionNode = card.SelectSingleNode();
 
-                var currenrCardUrl = card.SelectSingleNode(".//div[contains(@class, 'product-info')]//a");
-                var cardUrl = currenrCardUrl.GetAttributeValue("href", "");
+                var categoryNameNone = mainDoc.DocumentNode.SelectSingleNode("/html/head/title");
+                var categoryName = categoryNameNone?.InnerText?.Trim();
+                categoryName = categoryName?.Replace("Основной каталог", "").Replace("Raglo", "").Trim() ?? "";
 
-                //var currentCardNode = ;
+                var cards = new ConcurrentBag<Card>();
+                var semaphore = new SemaphoreSlim(5);
+
+                var tasks = allCardNode.Select(async cardNode =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        string article = "";
+                        string urlimage = "";
+                        string price = "";
+                        string description = "";
+                        string currentCardHtml = "";
 
 
+                        var articleNode = cardNode.SelectSingleNode(".//div[contains(@class, 'product-info')]/a");
+                        var pictureUrlNode = cardNode.SelectSingleNode(".//div[contains(@class, 'product-image-block')]//a//div");
+                        var priceNode = cardNode.SelectSingleNode(".//div[contains(@class, 'product-info')]//div[contains(@class, 'price-block')]//div[(@class='price font-body bold')]");
+
+                        if (articleNode != null)
+                        {
+                            article = articleNode.GetAttributeValue("href", "");
+                            article = article.Trim('/').Split('/').LastOrDefault() ?? "";
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Артикль пуст");
+                            article = "-";
+                        }
 
 
-                var article = articleNode.GetAttributeValue("href", "");
-                var urlimage = "https://raglo.ru" + pictureUrlNode.GetAttributeValue("data-src", "");
-                var price = priceNode?.InnerText?.Trim();
-                //var description = descriptionNode?.InnerText?.Trim();
-                var description = "";
+                        if (pictureUrlNode != null)
+                        {
+                            urlimage = "https://raglo.ru" + pictureUrlNode.GetAttributeValue("data-src", "");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Изображение пусто");
+                            urlimage = "-";
+                        }
 
-                Card currentCard = new Card(categoryName, article, urlimage, price, description);
-                cards.Add(currentCard);
+                        if (priceNode != null)
+                        {
+                            price = priceNode?.InnerText?.Trim();
+                            var numberMatch = System.Text.RegularExpressions.Regex.Match(price.Replace(" ", "").Replace("&nbsp;", ""), @"\d+[\d,.]*");
+                            Console.WriteLine(numberMatch);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Цена пуста");
+                            price = "-";
+                        }
+
+                        if (article != "-")
+                        {
+                            var cardUrl = baseUrl + article + "/";
+                            try
+                            {
+                                currentCardHtml = await client.HttpRequestAsync(cardUrl);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
+                            if (currentCardHtml != null)
+                            {
+                                var cardDoc = new HtmlDocument();
+                                cardDoc.LoadHtml(currentCardHtml);
+
+
+                                var currentCardNode = cardDoc.DocumentNode.SelectSingleNode("//div[contains(@class, 'text-block')]");
+                                var descriptionNode = currentCardNode.SelectSingleNode(".//div[@itemprop='description']");
+
+                                if (descriptionNode != null)
+                                {
+                                    description = descriptionNode?.InnerText?.Trim();
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Описание пустое");
+                                    description = "-";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            description = "-";
+                        }
+
+                        Card currentCard = new Card(categoryName, article, urlimage, price, description);
+                        cards.Add(currentCard);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+
+                await Task.WhenAll(tasks);
+                return cards.ToList();
             }
-            /*foreach (var card in cards)
+            else
             {
-                Console.WriteLine($"Категория товаров {card.categoryname}\n Артикль {card.article}\n Ссылка на картинку {card.pictureurl}\n Цена {card.price}\n Описание {card.description}\n\n");
-            }*/
-            return cards;
+                return new List<Card>();
+            }
         }
 
         public string ParseUrl(string html, string url)
@@ -57,7 +141,7 @@ namespace ParserLibrary
             doc.LoadHtml(html);
 
             string nextpageUrl = " ";
-            var nextNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'pagination-nav')]//div[@class='page-item ']//a");
+            var nextNode = doc.DocumentNode.SelectSingleNode("//div[@class='page-item ']//a");
 
             if (nextNode != null)
             {
