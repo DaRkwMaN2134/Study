@@ -24,7 +24,7 @@ namespace ParserLibrary
                 categoryName = categoryName?.Replace("Основной каталог", "").Replace("Raglo", "").Trim() ?? "";
 
                 var cards = new ConcurrentBag<Card>();
-                var semaphore = new SemaphoreSlim(5);
+                var semaphore = new SemaphoreSlim(20);
 
                 var tasks = allCardNode.Select(async cardNode =>
                 {
@@ -69,7 +69,6 @@ namespace ParserLibrary
                         {
                             price = priceNode?.InnerText?.Trim();
                             var numberMatch = System.Text.RegularExpressions.Regex.Match(price.Replace(" ", "").Replace("&nbsp;", ""), @"\d+[\d,.]*");
-                            Console.WriteLine(numberMatch);
                         }
                         else
                         {
