@@ -56,13 +56,3 @@ namespace ParserLibrary
         }
     }
 }
-            /*Console.WriteLine($"Первый ответ от сервера: \n{responce}");
-
-            if (responce.Headers.TryGetValues("Set-Cookie", out var cookieHeaders))
-            {
-                foreach (var cookie in cookieHeaders)
-                {
-                    Console.WriteLine($"Вывод куки: {cookie}");
-                }
-            }
-            Console.WriteLine($"Вывод html: {html}");*/

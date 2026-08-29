@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="DataLibrary/DataLibrary.csproj" />
+  <Project Path="FileIOLibrary/FileIOLibrary.csproj" Id="f6e2416e-da2c-40d1-9458-8431caee355c" />
   <Project Path="ParserLibrary/ParserLibrary.csproj" />
   <Project Path="ParserStart/ParserStart.csproj" />
 </Solution>

@@ -69,6 +69,7 @@ namespace ParserLibrary
                         {
                             price = priceNode?.InnerText?.Trim();
                             var numberMatch = System.Text.RegularExpressions.Regex.Match(price.Replace(" ", "").Replace("&nbsp;", ""), @"\d+[\d,.]*");
+                            price = numberMatch.ToString();
                         }
                         else
                         {
@@ -147,7 +148,6 @@ namespace ParserLibrary
                 string nexPageReference = nextNode.GetAttributeValue("href", "");
                 Uri fullUri = new Uri(new Uri(url), nexPageReference);
                 nextpageUrl = fullUri.ToString();
-                //Console.WriteLine(cardUrl);
                 return nextpageUrl;
             }
             else

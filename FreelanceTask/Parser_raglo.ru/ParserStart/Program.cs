@@ -1,11 +1,13 @@
 ﻿using DataLibrary;
 using HtmlAgilityPack;
 using ParserLibrary;
+using FileIOLibrary;
 
 class Program
 {
     static Http_Client client = new Http_Client();
     static Html_Parser parser = new Html_Parser();
+    static Excel_Output excel = new Excel_Output();
     static async Task Main()
     {
         var allCards = new List<Card>();
@@ -28,15 +30,11 @@ class Program
             {
                 var html = await client.HttpRequestAsync(url);
                 var cards = await parser.ParseCategoryAsync(html, categoryUrl);
-                Console.WriteLine(url);
                 allCards.AddRange(cards);
-
+                Console.Write($"Обработано карточек - {allCards.Count}\n");
                 url = parser.ParseUrl(html, url);
             }
         }
-        foreach (var card in allCards)
-        {
-            Console.WriteLine($"Категория: {card.categoryname}\nАртикль: {card.article}\nСсылка: {card.pictureurl}\nЦена: {card.price}\nОписание: \n{card.description}\n");
-        }
+        await excel.ExcelOutput(allCards);
     }
 }
