@@ -4,6 +4,20 @@ namespace ParserLibrary
 {
     public class Http_Client
     {
+        private static readonly HttpClient _client;
+        static Http_Client()
+        {
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = new CookieContainer(),
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            };
+            _client = new HttpClient(handler);
+            _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
+            _client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
+            //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com)");
+            //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        }
         public async Task<string> HttpRequestAsync(string url)
         {
             int maxRetries = 4;
@@ -12,20 +26,8 @@ namespace ParserLibrary
             {
                 try
                 {
-                    var handler = new HttpClientHandler
-                    {
-                        CookieContainer = new CookieContainer(),
-                        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-                    };
-                    using var client = new HttpClient(handler);
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
-                    client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
-                    //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com)");
-                    //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-
-
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    var responce = await client.SendAsync(request);
+                    var responce = await _client.SendAsync(request);
                     if (responce.IsSuccessStatusCode)
                     {
                         return await responce.Content.ReadAsStringAsync();

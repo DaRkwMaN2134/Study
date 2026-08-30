@@ -26,9 +26,10 @@ namespace ParserLibrary
                 var cards = new ConcurrentBag<Card>();
                 var semaphore = new SemaphoreSlim(20);
 
-                var tasks = allCardNode.Select(async cardNode =>
+
+                var options = new ParallelOptions { MaxDegreeOfParallelism = 20 };
+                await Parallel.ForEachAsync(allCardNode, options, async (cardNode, token) =>
                 {
-                    await semaphore.WaitAsync();
                     try
                     {
                         string article = "";
@@ -125,8 +126,6 @@ namespace ParserLibrary
                         semaphore.Release();
                     }
                 });
-
-                await Task.WhenAll(tasks);
                 return cards.ToList();
             }
             else

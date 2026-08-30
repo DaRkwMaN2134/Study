@@ -10,40 +10,48 @@ namespace FileIOLibrary
         {
             int row = 0;
 
-            ExcelPackage.License.SetNonCommercialPersonal("Learning");
-            using var package = new ExcelPackage();
-            var sheet = package.Workbook.Worksheets.Add("Карточки");
+            if (Card == null || Card.Count == 0)
+            {
+                Console.WriteLine("Нет данных для выгрузки.");
+                return;
+            }
+            else
+            {
+                ExcelPackage.License.SetNonCommercialPersonal("Learning");
+                using var package = new ExcelPackage();
+                var sheet = package.Workbook.Worksheets.Add("Карточки");
 
-            List<string> headeades = new List<string>{
+                List<string> headeades = new List<string>{
                 "Имя категории",
                 "Артикль",
                 "Url-картинки",
                 "Цена",
                 "Описание"};
 
-            for (int i = 0; i < headeades.Count; i++)
-            {
-                sheet.Cells[1, i + 1].Value = headeades[i];
+                for (int i = 0; i < headeades.Count; i++)
+                {
+                    sheet.Cells[1, i + 1].Value = headeades[i];
+                }
+                sheet.Cells[2, 1].LoadFromCollection(Card, false);
+                sheet.View.FreezePanes(2, 1);
+
+
+                sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Top.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+                sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Left.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+                sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Right.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+                sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Bottom.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+
+                sheet.Cells[1, 1, 1, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                sheet.Cells[2, 1, Card.Count + 1, 5].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                sheet.Cells[2, 1, Card.Count + 1, 5].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
+
+
+                sheet.Cells[1, 1, Card.Count + 1, 5].AutoFilter = true;
+                sheet.Cells[1, 1, Card.Count + 1, 5].AutoFitColumns();
+                sheet.Column(5).Style.WrapText = true;
+                sheet.Column(5).Width = 60;
+                await package.SaveAsAsync(new FileInfo("Card.xlsx"));
             }
-            sheet.Cells[2, 1].LoadFromCollection(Card, false);
-            sheet.View.FreezePanes(2, 1);
-         
-
-            sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Top.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
-            sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Left.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
-            sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Right.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
-            sheet.Cells[1, 1, Card.Count + 1, 5].Style.Border.Bottom.Style = OfficeOpenXml.Style.ExcelBorderStyle.Thin;
-            
-            sheet.Cells[1, 1, 1, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-            sheet.Cells[2, 1, Card.Count + 1, 5].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
-            sheet.Cells[2, 1, Card.Count + 1, 5].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
-
-
-            sheet.Cells[1, 1, Card.Count + 1, 5].AutoFilter = true;
-            sheet.Cells[1, 1, Card.Count + 1, 5].AutoFitColumns();
-            sheet.Column(5).Style.WrapText = true;
-            sheet.Column(5).Width = 60;
-            await package.SaveAsAsync(new FileInfo("Card.xlsx"));
         }
     }
 }
