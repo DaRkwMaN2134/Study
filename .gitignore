@@ -6,11 +6,13 @@ log.txt
 # Временные файлы сборки (для проектов Visual Studio)
 bin/
 obj/
+Properties/
 .vs/
 *.exe
 *.dll
 *.pdb
 *.DB
+*.xlsx
 
 # Файлы пользовательских настроек
 appsettings.json

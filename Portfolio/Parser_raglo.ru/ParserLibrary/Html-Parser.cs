@@ -24,8 +24,6 @@ namespace ParserLibrary
                 categoryName = categoryName?.Replace("Основной каталог", "").Replace("Raglo", "").Trim() ?? "";
 
                 var cards = new ConcurrentBag<Card>();
-                var semaphore = new SemaphoreSlim(20);
-
 
                 var options = new ParallelOptions { MaxDegreeOfParallelism = 20 };
                 await Parallel.ForEachAsync(allCardNode, options, async (cardNode, token) =>
@@ -96,11 +94,19 @@ namespace ParserLibrary
 
 
                                 var currentCardNode = cardDoc.DocumentNode.SelectSingleNode("//div[contains(@class, 'text-block')]");
-                                var descriptionNode = currentCardNode.SelectSingleNode(".//div[@itemprop='description']");
-
-                                if (descriptionNode != null)
+                                if (currentCardNode != null)
                                 {
-                                    description = descriptionNode?.InnerText?.Trim();
+                                    var descriptionNode = currentCardNode.SelectSingleNode(".//div[@itemprop='description']");
+
+                                    if (descriptionNode != null)
+                                    {
+                                        description = descriptionNode?.InnerText?.Trim();
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Описание пустое");
+                                        description = "-";
+                                    }
                                 }
                                 else
                                 {
@@ -120,10 +126,6 @@ namespace ParserLibrary
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
                     }
                 });
                 return cards.ToList();
