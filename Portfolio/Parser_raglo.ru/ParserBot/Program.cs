@@ -1,6 +1,7 @@
 ﻿using DataLibrary;
 using FileIOLibrary;
 using ParserLibrary;
+using ConfigurationLibrary;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -8,7 +9,8 @@ using Telegram.Bot.Types.Enums;
 
 class Bot
 {
-    private static readonly string BotToken = "";
+    static Configuration conf = new Configuration();
+    private static readonly string BotToken = conf.LoadConfiguration();
     private static CancellationTokenSource? _scheduleCts = null;
     private static bool _isParsing = false;
     private static bool _isScheduleEnabled = false;
@@ -60,6 +62,7 @@ class Bot
             await botClient.SendMessage(chatId, "Доступные команды: /start, /help, /run_parser, /schedule_on, /schedule_off, /status", cancellationToken: cancellationToken);
         }
 
+
         else if (messageText.StartsWith("/run_parser"))
         {
             if (_isParsing)
@@ -68,64 +71,26 @@ class Bot
                 return;
             }
             await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
-            _ = Task.Run(() => ParserCommandAsync(botClient, update, cancellationToken, chatId));
+            _ = Task.Run(() => ParserCommandAsync(botClient, cancellationToken, chatId));
             await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
 
         }
 
+
         else if (messageText.StartsWith("/schedule_on"))
         {
-            if (_isScheduleEnabled)
-            {
-                await botClient.SendMessage(chatId, "⚠️ Расписание уже включено.");
-                return;
-            }
-            _isScheduleEnabled = true;
-            _scheduleCts = new CancellationTokenSource();
-            await botClient.SendMessage(chatId, "✅ Расписание включено. Парсинг будет запускаться каждую 1 минуту.");
-
-            _ = Task.Run(async () =>
-            {
-                using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
-                while (_isScheduleEnabled)
-                {
-                    try
-                    {
-                        await timer.WaitForNextTickAsync(_scheduleCts.Token);
-                        await ParserCommandAsync(botClient, null!, _scheduleCts.Token, chatId);
-                        _lastRunTime = DateTime.Now;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Ошибка в расписании: {ex.Message}");
-                    }
-                }
-                _isScheduleEnabled = false;
-            });
+            await schedule_on_CommandAsync(botClient, chatId);
         }
 
         else if (messageText.StartsWith("/schedule_off"))
         {
-            if (!_isScheduleEnabled)
-            {
-                await botClient.SendMessage(chatId, "⚠️ Расписание уже выключено.");
-                return;
-            }
 
-            _isScheduleEnabled = false;
-            _scheduleCts?.Cancel();
-            await botClient.SendMessage(chatId, "⏹ Расписание отключается...");
+            await schedule_off_CommandAsync(botClient, chatId);
         }
 
         else if (messageText.StartsWith("/status"))
         {
-            await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
-            await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
-            await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime}");
+            await status_CommandAsync(botClient, chatId);
         }
 
         else
@@ -134,14 +99,78 @@ class Bot
         }
     }
 
+
     static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Произошла ошибка: {exception.Message}");
         return Task.CompletedTask;
     }
 
-    static async Task ParserCommandAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+
+    static async Task schedule_on_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
+        if (_isScheduleEnabled)
+        {
+            await botClient.SendMessage(chatId, "⚠️ Расписание уже включено.");
+            return;
+        }
+        _isScheduleEnabled = true;
+        _scheduleCts = new CancellationTokenSource();
+        await botClient.SendMessage(chatId, "✅ Расписание включено. Парсинг будет запускаться каждую 1 минуту.");
+
+        _ = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+            while (_isScheduleEnabled)
+            {
+                try
+                {
+                    await timer.WaitForNextTickAsync(_scheduleCts.Token);
+                    await ParserCommandAsync(botClient, _scheduleCts.Token, chatId);
+                    _lastRunTime = DateTime.Now;
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка в расписании: {ex.Message}");
+                }
+            }
+            _isScheduleEnabled = false;
+        });
+    }
+
+    static async Task schedule_off_CommandAsync(ITelegramBotClient botClient, long chatId)
+    {
+        if (!_isScheduleEnabled)
+        {
+            await botClient.SendMessage(chatId, "⚠️ Расписание уже выключено.");
+
+            return;
+        }
+
+        _isScheduleEnabled = false;
+        _scheduleCts?.Cancel();
+        _scheduleCts?.Dispose();
+        _scheduleCts = null;
+        await botClient.SendMessage(chatId, "⏹ Расписание отключается...");
+    }
+
+
+
+    static async Task status_CommandAsync(ITelegramBotClient botClient, long chatId)
+    {
+        await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
+        await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
+        await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime.ToString("HH:mm:ss dd.MM.yyyy")}");
+    }
+
+
+    static async Task ParserCommandAsync(ITelegramBotClient botClient, CancellationToken cancellationToken, long chatId)
+    {
+        if (_isParsing) return;
         int totalProcessed = 0;
         int notifyStep = 100;
             var allCards = new List<Card>();
@@ -187,8 +216,24 @@ class Bot
         await excel.ExcelOutput(allCards);
         _lastRunCount = allCards.Count;
         _lastRunTime = DateTime.Now;
+        await SendFileAsync(botClient, chatId);
+    }
 
-        await using var stream = File.OpenRead("Card.xlsx");
-        await botClient.SendDocument(chatId, stream);
+    static async Task SendFileAsync(ITelegramBotClient botClient, long chatId)
+    {
+        if (!File.Exists("Card.xlsx"))
+        {
+            await botClient.SendMessage(chatId, "Файл не создан, проверьте парсинг.");
+            return;
+        }
+        try
+        {
+            await using var stream = File.OpenRead("Card.xlsx");
+            await botClient.SendDocument(chatId, stream);
+        }
+        catch (Exception ex)
+        {
+            Console.Write(ex.Message);
+        }
     }
 }

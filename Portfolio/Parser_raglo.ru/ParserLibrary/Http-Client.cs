@@ -15,6 +15,7 @@ namespace ParserLibrary
             _client = new HttpClient(handler);
             _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
             _client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
+            _client.Timeout = TimeSpan.FromSeconds(30);
             //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com)");
             //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         }
