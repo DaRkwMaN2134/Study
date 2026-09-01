@@ -8,8 +8,12 @@ using Telegram.Bot.Types.Enums;
 
 class Bot
 {
-    private static readonly string BotToken = "8144039959:AAHku7u_maIMq83blIDXP6QIsWZCplga240";
+    private static readonly string BotToken = "";
+    private static CancellationTokenSource? _scheduleCts = null;
     private static bool _isParsing = false;
+    private static bool _isScheduleEnabled = false;
+    private static DateTime _lastRunTime;
+    private static int _lastRunCount;
     static Http_Client client = new Http_Client();
     static Html_Parser parser = new Html_Parser();
     static Excel_Output excel = new Excel_Output();
@@ -24,16 +28,14 @@ class Bot
             AllowedUpdates = Array.Empty<UpdateType>()
         };
 
-        // Исправлено: errorHandler вместо pollingErrorHandler
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
-            errorHandler: HandlePollingErrorAsync,   // <-- исправлено
+            errorHandler: HandlePollingErrorAsync,
             receiverOptions: receiverOptions,
             cancellationToken: cts.Token
         );
 
-        // Исправлено: GetMe() вместо GetMeAsync()
-        User me = await botClient.GetMe();           // <-- исправлено
+        User me = await botClient.GetMe();
         Console.WriteLine($"Бот {me.FirstName} запущен и слушает сообщения...");
 
         Console.ReadLine();
@@ -52,22 +54,78 @@ class Bot
         {
             await botClient.SendMessage(chatId, "Привет! Я бот, который умеет парсить сайты. Напиши /help для списка команд.", cancellationToken: cancellationToken);
         }
+
         else if (messageText.StartsWith("/help"))
         {
-            await botClient.SendMessage(chatId, "Доступные команды: /start, /help, /run_parser", cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, "Доступные команды: /start, /help, /run_parser, /schedule_on, /schedule_off, /status", cancellationToken: cancellationToken);
         }
+
         else if (messageText.StartsWith("/run_parser"))
         {
-            if (_isParsing == true)
+            if (_isParsing)
             {
-                await botClient.SendMessage(chatId, "Парсинг уже запущен в фоне, дождитесь завершения");
+                await botClient.SendMessage(chatId, "Парсинг уже выполняется, подождите.");
                 return;
             }
-
-            _isParsing = true;
             await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
             _ = Task.Run(() => ParserCommandAsync(botClient, update, cancellationToken, chatId));
             await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
+
+        }
+
+        else if (messageText.StartsWith("/schedule_on"))
+        {
+            if (_isScheduleEnabled)
+            {
+                await botClient.SendMessage(chatId, "⚠️ Расписание уже включено.");
+                return;
+            }
+            _isScheduleEnabled = true;
+            _scheduleCts = new CancellationTokenSource();
+            await botClient.SendMessage(chatId, "✅ Расписание включено. Парсинг будет запускаться каждую 1 минуту.");
+
+            _ = Task.Run(async () =>
+            {
+                using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+                while (_isScheduleEnabled)
+                {
+                    try
+                    {
+                        await timer.WaitForNextTickAsync(_scheduleCts.Token);
+                        await ParserCommandAsync(botClient, null!, _scheduleCts.Token, chatId);
+                        _lastRunTime = DateTime.Now;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Ошибка в расписании: {ex.Message}");
+                    }
+                }
+                _isScheduleEnabled = false;
+            });
+        }
+
+        else if (messageText.StartsWith("/schedule_off"))
+        {
+            if (!_isScheduleEnabled)
+            {
+                await botClient.SendMessage(chatId, "⚠️ Расписание уже выключено.");
+                return;
+            }
+
+            _isScheduleEnabled = false;
+            _scheduleCts?.Cancel();
+            await botClient.SendMessage(chatId, "⏹ Расписание отключается...");
+        }
+
+        else if (messageText.StartsWith("/status"))
+        {
+            await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
+            await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
+            await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime}");
         }
 
         else
@@ -86,9 +144,8 @@ class Bot
     {
         int totalProcessed = 0;
         int notifyStep = 100;
-
-        var allCards = new List<Card>();
-        var categories = new List<string>
+            var allCards = new List<Card>();
+            var categories = new List<string>
             {
             "https://raglo.ru/catalog/dushevye-trapy/",
             "https://raglo.ru/catalog/kukhnya/dozatory-/",
@@ -99,27 +156,38 @@ class Bot
             "https://raglo.ru/catalog/kukhonnye-moyki/",
             "https://raglo.ru/catalog/aksessuary-dlya-vannoy-komnaty/"
             };
-
-        foreach (var categoryUrl in categories)
+        try
         {
-            string url = categoryUrl;
-            while (!string.IsNullOrEmpty(url))
+
+            _isParsing = true;
+            foreach (var categoryUrl in categories)
             {
-                var html = await client.HttpRequestAsync(url);
-                var cards = await parser.ParseCategoryAsync(html, categoryUrl);
-                allCards.AddRange(cards);
-                totalProcessed += cards.Count;
-                Console.Write($"Обработано карточек - {allCards.Count}\n");
-                if (totalProcessed % notifyStep < cards.Count)
+                string url = categoryUrl;
+                while (!string.IsNullOrEmpty(url))
                 {
-                    await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
+                    var html = await client.HttpRequestAsync(url);
+                    var cards = await parser.ParseCategoryAsync(html, categoryUrl);
+                    allCards.AddRange(cards);
+                    totalProcessed += cards.Count;
+                    Console.Write($"Обработано карточек - {allCards.Count}\n");
+                    if (totalProcessed % notifyStep < cards.Count)
+                    {
+                        await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
+                    }
+                    url = parser.ParseUrl(html, url);
                 }
-                url = parser.ParseUrl(html, url);
             }
+        }
+        finally
+        {
+            _isParsing = false;
         }
         Console.Write("Карточки спарсены");
         await botClient.SendMessage(chatId, $"Всего спарсено карточек {allCards.Count}", cancellationToken: cancellationToken);
         await excel.ExcelOutput(allCards);
+        _lastRunCount = allCards.Count;
+        _lastRunTime = DateTime.Now;
+
         await using var stream = File.OpenRead("Card.xlsx");
         await botClient.SendDocument(chatId, stream);
     }
