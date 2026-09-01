@@ -84,6 +84,9 @@ class Bot
 
     static async Task ParserCommandAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
+        int totalProcessed = 0;
+        int notifyStep = 100;
+
         var allCards = new List<Card>();
         var categories = new List<string>
             {
@@ -105,7 +108,12 @@ class Bot
                 var html = await client.HttpRequestAsync(url);
                 var cards = await parser.ParseCategoryAsync(html, categoryUrl);
                 allCards.AddRange(cards);
+                totalProcessed += cards.Count;
                 Console.Write($"Обработано карточек - {allCards.Count}\n");
+                if (totalProcessed % notifyStep < cards.Count)
+                {
+                    await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
+                }
                 url = parser.ParseUrl(html, url);
             }
         }
