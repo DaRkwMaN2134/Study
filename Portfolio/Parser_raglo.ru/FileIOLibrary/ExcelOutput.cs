@@ -1,18 +1,20 @@
 ﻿using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using DataLibrary;
+using ConfigurationLibrary;
 
 namespace FileIOLibrary
 {
     public class Excel_Output
     {
+        static FileLogger log = new FileLogger();
         public async Task ExcelOutput(List<Card> Card)
         {
             int row = 0;
 
             if (Card == null || Card.Count == 0)
             {
-                Console.WriteLine("Нет данных для выгрузки.");
+                await log.LogErrorAsync($"Excel - Нет данных для выгрузки.");
                 return;
             }
             else

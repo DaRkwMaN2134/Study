@@ -10,6 +10,7 @@ using Telegram.Bot.Types.Enums;
 class Bot
 {
     static Configuration conf = new Configuration();
+    static FileLogger log = new FileLogger();
     private static readonly string BotToken = conf.LoadConfiguration();
     private static CancellationTokenSource? _scheduleCts = null;
     private static bool _isParsing = false;
@@ -36,12 +37,19 @@ class Bot
             receiverOptions: receiverOptions,
             cancellationToken: cts.Token
         );
-
-        User me = await botClient.GetMe();
-        Console.WriteLine($"Бот {me.FirstName} запущен и слушает сообщения...");
+        try
+        {
+            User me = await botClient.GetMe();
+            await log.LogAsync($"Бот {me.FirstName} запущен");
+        }
+        catch(Exception ex)
+        {
+            await log.LogErrorAsync($"Бот", ex);
+        }
 
         Console.ReadLine();
         cts.Cancel();
+        await log.LogAsync($"Бот выключен");
     }
 
     static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -50,7 +58,7 @@ class Bot
             return;
 
         var chatId = message.Chat.Id;
-        Console.WriteLine($"Получено сообщение: '{messageText}' от пользователя {chatId}");
+        await log.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
 
         if (messageText.StartsWith("/start"))
         {
@@ -68,11 +76,14 @@ class Bot
             if (_isParsing)
             {
                 await botClient.SendMessage(chatId, "Парсинг уже выполняется, подождите.");
+                await log.LogAsync($"Парсинг уже выполняется, подождите");
                 return;
             }
             await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
+            await log.LogAsync($"Начался парсинг карточек");
             _ = Task.Run(() => ParserCommandAsync(botClient, cancellationToken, chatId));
             await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
+            await log.LogAsync($"Парсинг запущен в фоне...");
 
         }
 
@@ -99,10 +110,9 @@ class Bot
         }
     }
 
-
     static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Произошла ошибка: {exception.Message}");
+        log.LogErrorAsync("Произошла ошибка", exception);
         return Task.CompletedTask;
     }
 
@@ -135,7 +145,7 @@ class Bot
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в расписании: {ex.Message}");
+                    await log.LogErrorAsync("Произошла ошибка", ex);
                 }
             }
             _isScheduleEnabled = false;
@@ -198,9 +208,10 @@ class Bot
                     var cards = await parser.ParseCategoryAsync(html, categoryUrl);
                     allCards.AddRange(cards);
                     totalProcessed += cards.Count;
-                    Console.Write($"Обработано карточек - {allCards.Count}\n");
+
                     if (totalProcessed % notifyStep < cards.Count)
-                    {
+                    {                    
+                        await log.LogAsync($"Обработано карточек - {totalProcessed}");
                         await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
                     }
                     url = parser.ParseUrl(html, url);
@@ -211,7 +222,7 @@ class Bot
         {
             _isParsing = false;
         }
-        Console.Write("Карточки спарсены");
+        await log.LogAsync($"Карточки спарсены");
         await botClient.SendMessage(chatId, $"Всего спарсено карточек {allCards.Count}", cancellationToken: cancellationToken);
         await excel.ExcelOutput(allCards);
         _lastRunCount = allCards.Count;
@@ -233,7 +244,7 @@ class Bot
         }
         catch (Exception ex)
         {
-            Console.Write(ex.Message);
+            await log.LogErrorAsync("Произошла ошибка", ex);
         }
     }
 }

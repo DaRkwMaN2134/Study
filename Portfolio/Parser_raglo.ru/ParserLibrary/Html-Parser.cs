@@ -1,4 +1,5 @@
 ﻿using DataLibrary;
+using ConfigurationLibrary;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Concurrent;
@@ -11,6 +12,7 @@ namespace ParserLibrary
     public class Html_Parser
     {
         static Http_Client client = new Http_Client();
+        static FileLogger log = new FileLogger();
         public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl)
         {
             var mainDoc = new HtmlDocument();
@@ -49,7 +51,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            Console.WriteLine("Артикль пуст");
+                            await log.LogErrorAsync($"Парсер - Артикль на карточке пуст");
                             article = "-";
                         }
 
@@ -60,7 +62,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            Console.WriteLine("Изображение пусто");
+                            await log.LogErrorAsync($"Парсер - Изображение на карточке пусто");
                             urlimage = "-";
                         }
 
@@ -72,7 +74,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            Console.WriteLine("Цена пуста");
+                            await log.LogErrorAsync($"Парсер - Цена на карточке пуст");
                             price = "-";
                         }
 
@@ -85,7 +87,7 @@ namespace ParserLibrary
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine(ex.Message);
+                                await log.LogErrorAsync($"Парсер", ex);
                             }
                             if (currentCardHtml != null)
                             {
@@ -104,13 +106,13 @@ namespace ParserLibrary
                                     }
                                     else
                                     {
-                                        Console.WriteLine("Описание пустое");
+                                        await log.LogErrorAsync($"Парсер - Описание на карточке пусто");
                                         description = "-";
                                     }
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Описание пустое");
+                                    await log.LogErrorAsync($"Парсер - Описание на карточке пусто");
                                     description = "-";
                                 }
                             }
@@ -125,7 +127,7 @@ namespace ParserLibrary
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
+                        await log.LogErrorAsync($"Парсер", ex);
                     }
                 });
                 return cards.ToList();

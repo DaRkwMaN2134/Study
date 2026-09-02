@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using ConfigurationLibrary;
+using System.Net;
 
 namespace ParserLibrary
 {
     public class Http_Client
     {
+        static FileLogger log = new FileLogger();
         private static readonly HttpClient _client;
         static Http_Client()
         {
@@ -40,6 +42,7 @@ namespace ParserLibrary
                         if (attempt >= maxRetries)
                         {
                             throw new HttpRequestException($"Не удалось получить ответ после {maxRetries} попыток");
+
                         }
                         await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt))); // 2, 4, 8 секунд
                         continue;
@@ -51,6 +54,7 @@ namespace ParserLibrary
                 }
                 catch (Exception ex) when (attempt < maxRetries - 1)
                 {
+                    await log.LogErrorAsync($"HTTP-Client", ex);
                     attempt++;
                     await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
                 }
