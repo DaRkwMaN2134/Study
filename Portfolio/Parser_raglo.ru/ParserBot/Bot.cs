@@ -1,12 +1,13 @@
-﻿using DataLibrary;
+﻿using ConfigurationLibrary;
+using DataLibrary;
 using FileIOLibrary;
+using Microsoft.Extensions.DependencyInjection;
 using ParserLibrary;
-using ConfigurationLibrary;
+using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Microsoft.Extensions.DependencyInjection;
 
 class Bot
 {
@@ -15,21 +16,24 @@ class Bot
     private readonly IHtmlParser _htmlParser;
     private readonly IExcelOutput _excelOutput;
     private readonly string _botToken;
-
+    private readonly Configuration _config;
     public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config)
     {
         _logger = logger;
         _httpClient = httpClient;
         _htmlParser = htmlParser;
         _excelOutput = excelOutput;
-        _botToken = config.LoadConfiguration();
+        _botToken = config.TokenLoadConfiguration();
+        _config = config;
     }
 
     private static CancellationTokenSource? _scheduleCts = null;
     private static bool _isParsing = false;
+    private static bool isWaiting = false;
     private static bool _isScheduleEnabled = false;
     private static DateTime _lastRunTime;
     private static int _lastRunCount;
+    private static readonly ConcurrentDictionary<long, string> _userState = new ConcurrentDictionary<long, string>();
 
 
     static public async Task Main(string[] args)
@@ -85,6 +89,17 @@ class Bot
             return;
 
         var chatId = message.Chat.Id;
+
+        if (_userState.TryGetValue(chatId, out var state))
+        {
+            if (state == "awaiting_interval")
+            {
+                await schedule_edit_CommandAsync(botClient, chatId, messageText);
+                return;
+            }
+        }
+
+
         await _logger.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
 
         if (messageText.StartsWith("/start"))
@@ -122,8 +137,13 @@ class Bot
 
         else if (messageText.StartsWith("/schedule_off"))
         {
-
             await schedule_off_CommandAsync(botClient, chatId);
+        }
+
+        else if (messageText.StartsWith("/schedule_edit"))
+        {
+            await botClient.SendMessage(chatId, $"Введите желаемый интервал обновления");
+            _userState[chatId] = "awaiting_interval";
         }
 
         else if (messageText.StartsWith("/status"))
@@ -144,8 +164,28 @@ class Bot
     }
 
 
+    async Task schedule_edit_CommandAsync(ITelegramBotClient botClient, long chatId, string messageText)
+    {
+        if (int.TryParse(messageText, out int interval) == false)
+        {
+            await botClient.SendMessage(chatId, $"Ошибка. Введите число");
+            return;
+        }
+        else
+        {
+            _config.editIntervalLoadConfiguration(interval);
+            await botClient.SendMessage(chatId, $"✅ Интервал обновлён: {interval} минут.");
+        }
+        _userState.TryRemove(chatId, out var removedState);
+
+    }
+
+
+
     async Task schedule_on_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
+        var interval = TimeSpan.FromMinutes(_config.IntervalLoadConfiguration());
+
         if (_isScheduleEnabled)
         {
             await botClient.SendMessage(chatId, "⚠️ Расписание уже включено.");
@@ -153,11 +193,11 @@ class Bot
         }
         _isScheduleEnabled = true;
         _scheduleCts = new CancellationTokenSource();
-        await botClient.SendMessage(chatId, "✅ Расписание включено. Парсинг будет запускаться каждую 1 минуту.");
+        await botClient.SendMessage(chatId, $"✅ Расписание включено. Парсинг будет запускаться с промежутком {interval}");
 
         _ = Task.Run(async () =>
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+            using var timer = new PeriodicTimer(interval);
             while (_isScheduleEnabled)
             {
                 try
@@ -200,6 +240,7 @@ class Bot
     async Task status_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
         await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
+        await botClient.SendMessage(chatId, $"Статус расписания:{_config.IntervalLoadConfiguration()}");
         await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
         await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime.ToString("HH:mm:ss dd.MM.yyyy")}");
     }
