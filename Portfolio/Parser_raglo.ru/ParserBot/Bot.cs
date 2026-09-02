@@ -6,24 +6,51 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Microsoft.Extensions.DependencyInjection;
 
 class Bot
 {
-    static Configuration conf = new Configuration();
-    static FileLogger log = new FileLogger();
-    private static readonly string BotToken = conf.LoadConfiguration();
+    private readonly ILogger _logger;
+    private readonly IHttpClient _httpClient;
+    private readonly IHtmlParser _htmlParser;
+    private readonly IExcelOutput _excelOutput;
+    private readonly string _botToken;
+
+    public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config)
+    {
+        _logger = logger;
+        _httpClient = httpClient;
+        _htmlParser = htmlParser;
+        _excelOutput = excelOutput;
+        _botToken = config.LoadConfiguration();
+    }
+
     private static CancellationTokenSource? _scheduleCts = null;
     private static bool _isParsing = false;
     private static bool _isScheduleEnabled = false;
     private static DateTime _lastRunTime;
     private static int _lastRunCount;
-    static Http_Client client = new Http_Client();
-    static Html_Parser parser = new Html_Parser();
-    static Excel_Output excel = new Excel_Output();
 
-    static async Task Main(string[] args)
+
+    static public async Task Main(string[] args)
     {
-        var botClient = new TelegramBotClient(BotToken);
+        var services = new ServiceCollection();
+        services.AddSingleton<IHttpClient, Http_Client>();
+        services.AddSingleton<IHtmlParser, Html_Parser>();
+        services.AddSingleton<IExcelOutput, Excel_Output>();
+        services.AddSingleton<ILogger, FileLogger>();
+        services.AddSingleton<Configuration>();
+        services.AddSingleton<Bot>();
+
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        var bot = serviceProvider.GetRequiredService<Bot>();
+        await bot.runBotAsync();
+    }
+    async Task runBotAsync()
+    {
+        var botClient = new TelegramBotClient(_botToken);
         using var cts = new CancellationTokenSource();
 
         var receiverOptions = new ReceiverOptions
@@ -40,25 +67,25 @@ class Bot
         try
         {
             User me = await botClient.GetMe();
-            await log.LogAsync($"Бот {me.FirstName} запущен");
+            await _logger.LogAsync($"Бот {me.FirstName} запущен");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            await log.LogErrorAsync($"Бот", ex);
+            await _logger.LogErrorAsync($"Бот", ex);
         }
 
         Console.ReadLine();
         cts.Cancel();
-        await log.LogAsync($"Бот выключен");
+        await _logger.LogAsync($"Бот выключен");
     }
 
-    static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         if (update.Message is not { } message || message.Text is not { } messageText)
             return;
 
         var chatId = message.Chat.Id;
-        await log.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
+        await _logger.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
 
         if (messageText.StartsWith("/start"))
         {
@@ -76,14 +103,14 @@ class Bot
             if (_isParsing)
             {
                 await botClient.SendMessage(chatId, "Парсинг уже выполняется, подождите.");
-                await log.LogAsync($"Парсинг уже выполняется, подождите");
+                await _logger.LogAsync($"Парсинг уже выполняется, подождите");
                 return;
             }
             await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
-            await log.LogAsync($"Начался парсинг карточек");
+            await _logger.LogAsync($"Начался парсинг карточек");
             _ = Task.Run(() => ParserCommandAsync(botClient, cancellationToken, chatId));
             await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
-            await log.LogAsync($"Парсинг запущен в фоне...");
+            await _logger.LogAsync($"Парсинг запущен в фоне...");
 
         }
 
@@ -110,14 +137,14 @@ class Bot
         }
     }
 
-    static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
-        log.LogErrorAsync("Произошла ошибка", exception);
+        _logger.LogErrorAsync("Произошла ошибка", exception);
         return Task.CompletedTask;
     }
 
 
-    static async Task schedule_on_CommandAsync(ITelegramBotClient botClient, long chatId)
+    async Task schedule_on_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
         if (_isScheduleEnabled)
         {
@@ -145,14 +172,14 @@ class Bot
                 }
                 catch (Exception ex)
                 {
-                    await log.LogErrorAsync("Произошла ошибка", ex);
+                    await _logger.LogErrorAsync("Произошла ошибка", ex);
                 }
             }
             _isScheduleEnabled = false;
         });
     }
 
-    static async Task schedule_off_CommandAsync(ITelegramBotClient botClient, long chatId)
+    async Task schedule_off_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
         if (!_isScheduleEnabled)
         {
@@ -170,7 +197,7 @@ class Bot
 
 
 
-    static async Task status_CommandAsync(ITelegramBotClient botClient, long chatId)
+    async Task status_CommandAsync(ITelegramBotClient botClient, long chatId)
     {
         await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
         await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
@@ -178,7 +205,7 @@ class Bot
     }
 
 
-    static async Task ParserCommandAsync(ITelegramBotClient botClient, CancellationToken cancellationToken, long chatId)
+    async Task ParserCommandAsync(ITelegramBotClient botClient, CancellationToken cancellationToken, long chatId)
     {
         if (_isParsing) return;
         int totalProcessed = 0;
@@ -204,17 +231,17 @@ class Bot
                 string url = categoryUrl;
                 while (!string.IsNullOrEmpty(url))
                 {
-                    var html = await client.HttpRequestAsync(url);
-                    var cards = await parser.ParseCategoryAsync(html, categoryUrl);
+                    var html = await _httpClient.HttpRequestAsync(url, cancellationToken);
+                    var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl);
                     allCards.AddRange(cards);
                     totalProcessed += cards.Count;
 
                     if (totalProcessed % notifyStep < cards.Count)
                     {                    
-                        await log.LogAsync($"Обработано карточек - {totalProcessed}");
+                        await _logger.LogAsync($"Обработано карточек - {totalProcessed}");
                         await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
                     }
-                    url = parser.ParseUrl(html, url);
+                    url = _htmlParser.ParseUrl(html, url);
                 }
             }
         }
@@ -222,15 +249,15 @@ class Bot
         {
             _isParsing = false;
         }
-        await log.LogAsync($"Карточки спарсены");
+        await _logger.LogAsync($"Карточки спарсены");
         await botClient.SendMessage(chatId, $"Всего спарсено карточек {allCards.Count}", cancellationToken: cancellationToken);
-        await excel.ExcelOutput(allCards);
+        await _excelOutput.ExcelOutput(allCards);
         _lastRunCount = allCards.Count;
         _lastRunTime = DateTime.Now;
         await SendFileAsync(botClient, chatId);
     }
 
-    static async Task SendFileAsync(ITelegramBotClient botClient, long chatId)
+    async Task SendFileAsync(ITelegramBotClient botClient, long chatId)
     {
         if (!File.Exists("Card.xlsx"))
         {
@@ -244,7 +271,7 @@ class Bot
         }
         catch (Exception ex)
         {
-            await log.LogErrorAsync("Произошла ошибка", ex);
+            await _logger.LogErrorAsync("Произошла ошибка", ex);
         }
     }
 }

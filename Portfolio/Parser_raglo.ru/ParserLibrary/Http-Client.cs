@@ -3,10 +3,11 @@ using System.Net;
 
 namespace ParserLibrary
 {
-    public class Http_Client
+    public class Http_Client : IHttpClient
     {
-        static FileLogger log = new FileLogger();
         private static readonly HttpClient _client;
+        private readonly ILogger _logger;
+
         static Http_Client()
         {
             var handler = new HttpClientHandler
@@ -18,10 +19,14 @@ namespace ParserLibrary
             _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
             _client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
             _client.Timeout = TimeSpan.FromSeconds(30);
-            //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com)");
-            //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         }
-        public async Task<string> HttpRequestAsync(string url)
+
+        public Http_Client(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public async Task<string> HttpRequestAsync(string url, CancellationToken token)
         {
             int maxRetries = 4;
             int attempt = 0;
@@ -54,7 +59,7 @@ namespace ParserLibrary
                 }
                 catch (Exception ex) when (attempt < maxRetries - 1)
                 {
-                    await log.LogErrorAsync($"HTTP-Client", ex);
+                    await _logger.LogErrorAsync($"HTTP-Client", ex);
                     attempt++;
                     await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
                 }

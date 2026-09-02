@@ -1,6 +1,7 @@
-﻿using DataLibrary;
-using ConfigurationLibrary;
+﻿using ConfigurationLibrary;
+using DataLibrary;
 using HtmlAgilityPack;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,10 +10,18 @@ using System.Xml.Linq;
 
 namespace ParserLibrary
 {
-    public class Html_Parser
+    public class Html_Parser: IHtmlParser
     {
-        static Http_Client client = new Http_Client();
-        static FileLogger log = new FileLogger();
+        private readonly IHttpClient _httpClient;
+        private readonly ILogger _logger;
+        public Html_Parser(IHttpClient httpClient, ILogger logger)
+        {
+            _httpClient = httpClient;
+            _logger = logger;
+        }
+
+
+
         public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl)
         {
             var mainDoc = new HtmlDocument();
@@ -51,7 +60,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            await log.LogErrorAsync($"Парсер - Артикль на карточке пуст");
+                            await _logger.LogErrorAsync($"Парсер - Артикль на карточке пуст");
                             article = "-";
                         }
 
@@ -62,7 +71,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            await log.LogErrorAsync($"Парсер - Изображение на карточке пусто");
+                            await _logger.LogErrorAsync($"Парсер - Изображение на карточке пусто");
                             urlimage = "-";
                         }
 
@@ -74,7 +83,7 @@ namespace ParserLibrary
                         }
                         else
                         {
-                            await log.LogErrorAsync($"Парсер - Цена на карточке пуст");
+                            await _logger.LogErrorAsync($"Парсер - Цена на карточке пуст");
                             price = "-";
                         }
 
@@ -83,11 +92,11 @@ namespace ParserLibrary
                             var cardUrl = baseUrl + article + "/";
                             try
                             {
-                                currentCardHtml = await client.HttpRequestAsync(cardUrl);
+                                currentCardHtml = await _httpClient.HttpRequestAsync(cardUrl, token);
                             }
                             catch (Exception ex)
                             {
-                                await log.LogErrorAsync($"Парсер", ex);
+                                await _logger.LogErrorAsync($"Парсер", ex);
                             }
                             if (currentCardHtml != null)
                             {
@@ -106,13 +115,13 @@ namespace ParserLibrary
                                     }
                                     else
                                     {
-                                        await log.LogErrorAsync($"Парсер - Описание на карточке пусто");
+                                        await _logger.LogErrorAsync($"Парсер - Описание на карточке пусто");
                                         description = "-";
                                     }
                                 }
                                 else
                                 {
-                                    await log.LogErrorAsync($"Парсер - Описание на карточке пусто");
+                                    await _logger.LogErrorAsync($"Парсер - Описание на карточке пусто");
                                     description = "-";
                                 }
                             }
@@ -127,7 +136,7 @@ namespace ParserLibrary
                     }
                     catch (Exception ex)
                     {
-                        await log.LogErrorAsync($"Парсер", ex);
+                        await _logger.LogErrorAsync($"Парсер", ex);
                     }
                 });
                 return cards.ToList();

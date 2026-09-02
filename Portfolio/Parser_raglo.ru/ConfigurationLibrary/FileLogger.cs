@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ConfigurationLibrary
 {
-    public class FileLogger
+    public class FileLogger : ILogger
     {
         static string logfolder = "logs/";
         static string logfile = "log_";

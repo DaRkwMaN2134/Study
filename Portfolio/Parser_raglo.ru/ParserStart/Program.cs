@@ -1,14 +1,24 @@
-﻿using DataLibrary;
+﻿using ConfigurationLibrary;
+using DataLibrary;
+using FileIOLibrary;
 using HtmlAgilityPack;
 using ParserLibrary;
-using FileIOLibrary;
 
 class Program
 {
-    static Http_Client client = new Http_Client();
-    static Html_Parser parser = new Html_Parser();
-    static Excel_Output excel = new Excel_Output();
-    static async Task Main()
+    private readonly ILogger _logger;
+    private readonly IHttpClient _httpClient;
+    private readonly IHtmlParser _htmlParser;
+    private readonly IExcelOutput _excelOutput;
+    public Program(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput)
+    {
+        _logger = logger;
+        _httpClient = httpClient;
+        _htmlParser = htmlParser;
+        _excelOutput = excelOutput;
+    }
+    static CancellationToken token = new CancellationToken();
+    async Task Main()
     {
         var allCards = new List<Card>();
         var categories = new List<string>
@@ -28,13 +38,13 @@ class Program
             string url = categoryUrl;
             while (!string.IsNullOrEmpty(url))
             {
-                var html = await client.HttpRequestAsync(url);
-                var cards = await parser.ParseCategoryAsync(html, categoryUrl);
+                var html = await _httpClient.HttpRequestAsync(url, token);
+                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl);
                 allCards.AddRange(cards);
                 Console.Write($"Обработано карточек - {allCards.Count}\n");
-                url = parser.ParseUrl(html, url);
+                url = _htmlParser.ParseUrl(html, url);
             }
         }
-        await excel.ExcelOutput(allCards);
+        await _excelOutput.ExcelOutput(allCards);
     }
 }

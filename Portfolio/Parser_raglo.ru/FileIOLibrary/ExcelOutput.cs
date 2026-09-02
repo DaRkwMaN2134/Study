@@ -5,16 +5,21 @@ using ConfigurationLibrary;
 
 namespace FileIOLibrary
 {
-    public class Excel_Output
+    public class Excel_Output: IExcelOutput
     {
-        static FileLogger log = new FileLogger();
+        private readonly ILogger _logger;
+
+        public Excel_Output(ILogger logger)
+        {
+            _logger = logger;
+        }
         public async Task ExcelOutput(List<Card> Card)
         {
             int row = 0;
 
             if (Card == null || Card.Count == 0)
             {
-                await log.LogErrorAsync($"Excel - Нет данных для выгрузки.");
+                await _logger.LogErrorAsync($"Excel - Нет данных для выгрузки.");
                 return;
             }
             else
