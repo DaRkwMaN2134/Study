@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DataLibrary;
 
 namespace ConfigurationLibrary
 {
@@ -45,6 +46,15 @@ namespace ConfigurationLibrary
             }
             string updatedJson = _root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText("appsettings.json", updatedJson);
+        }
+
+
+        public static Proxy GetProxySettings()
+        {
+            string jsonText = File.ReadAllText("appsettings.json");
+
+            Proxy proxy = JsonSerializer.Deserialize<Proxy>(jsonText);
+            return proxy;
         }
     }
 }

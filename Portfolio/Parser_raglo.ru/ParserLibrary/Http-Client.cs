@@ -1,5 +1,6 @@
 ﻿using ConfigurationLibrary;
 using System.Net;
+using DataLibrary;
 
 namespace ParserLibrary
 {
@@ -7,23 +8,38 @@ namespace ParserLibrary
     {
         private static readonly HttpClient _client;
         private readonly ILogger _logger;
+        private static readonly Proxy _proxy;
+
+
+        public Http_Client(ILogger logger)
+        {
+            _logger = logger;
+        }
 
         static Http_Client()
         {
+            var proxySettings = Configuration.GetProxySettings();
+
             var handler = new HttpClientHandler
             {
                 CookieContainer = new CookieContainer(),
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
+
+            if (proxySettings != null && !string.IsNullOrEmpty(proxySettings.address))
+            {
+                var proxy = new WebProxy(proxySettings.address, true);
+                if (!string.IsNullOrEmpty(proxySettings.username))
+                {
+                    proxy.Credentials = new NetworkCredential(proxySettings.username, proxySettings.password);
+                }
+                handler.Proxy = proxy;
+            }
+
             _client = new HttpClient(handler);
             _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
             _client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml");
             _client.Timeout = TimeSpan.FromSeconds(30);
-        }
-
-        public Http_Client(ILogger logger)
-        {
-            _logger = logger;
         }
 
         public async Task<string> HttpRequestAsync(string url, CancellationToken token)
