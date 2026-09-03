@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ConfigurationLibrary\ConfigurationLibrary.csproj" />
     <ProjectReference Include="..\DataLibrary\DataLibrary.csproj" />
+    <ProjectReference Include="..\FileIOLibrary\FileIOLibrary.csproj" />
   </ItemGroup>
 
 </Project>

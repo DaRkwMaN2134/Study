@@ -8,6 +8,7 @@ namespace FileIOLibrary
     public class Excel_Output: IExcelOutput
     {
         private readonly ILogger _logger;
+        private ExcelWorksheet sheet;
 
         public Excel_Output(ILogger logger)
         {
@@ -26,7 +27,7 @@ namespace FileIOLibrary
             {
                 ExcelPackage.License.SetNonCommercialPersonal("Learning");
                 using var package = new ExcelPackage();
-                var sheet = package.Workbook.Worksheets.Add("Карточки");
+                sheet = package.Workbook.Worksheets.Add("Карточки");
 
                 List<string> headeades = new List<string>{
                 "Имя категории",
@@ -59,6 +60,13 @@ namespace FileIOLibrary
                 sheet.Column(5).Width = 60;
                 await package.SaveAsAsync(new FileInfo("Card.xlsx"));
             }
+        }
+
+        public async Task<int> AppendCardsAsync(ExcelWorksheet sheet, List<Card> cards, int startRow)
+        {
+            if (cards == null || cards.Count == 0) return 0;
+            sheet.Cells[startRow, 1].LoadFromCollection(cards, false);
+            return cards.Count;
         }
     }
 }

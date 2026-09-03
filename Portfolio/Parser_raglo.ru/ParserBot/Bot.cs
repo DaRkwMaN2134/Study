@@ -2,8 +2,10 @@
 using DataLibrary;
 using FileIOLibrary;
 using Microsoft.Extensions.DependencyInjection;
+using OfficeOpenXml;
 using ParserLibrary;
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -11,6 +13,7 @@ using Telegram.Bot.Types.Enums;
 
 class Bot
 {
+
     private readonly ILogger _logger;
     private readonly IHttpClient _httpClient;
     private readonly IHtmlParser _htmlParser;
@@ -71,7 +74,7 @@ class Bot
         try
         {
             User me = await botClient.GetMe();
-            await _logger.LogAsync($"Бот {me.FirstName} запущен");
+            await _logger.LogAsync($"\nБот {me.FirstName} запущен");
         }
         catch (Exception ex)
         {
@@ -248,12 +251,16 @@ class Bot
 
     async Task ParserCommandAsync(ITelegramBotClient botClient, CancellationToken cancellationToken, long chatId)
     {
-        if (_isParsing) return;
+        ExcelPackage.License.SetNonCommercialPersonal("Learning");
+
+        List<Card> batch = new List<Card>();
+        int batchSize = 50;
+        int currentRow = 2;
         int totalProcessed = 0;
         int notifyStep = 100;
-            var allCards = new List<Card>();
-            var categories = new List<string>
-            {
+
+        var categories = new List<string>
+        {
             "https://raglo.ru/catalog/dushevye-trapy/",
             "https://raglo.ru/catalog/kukhnya/dozatory-/",
             "https://raglo.ru/catalog/po-seriyam/",
@@ -262,7 +269,28 @@ class Bot
             "https://raglo.ru/catalog/aksessuary-dlya-smesiteley/",
             "https://raglo.ru/catalog/kukhonnye-moyki/",
             "https://raglo.ru/catalog/aksessuary-dlya-vannoy-komnaty/"
-            };
+        };
+
+        using var package = new ExcelPackage();
+        var sheet = package.Workbook.Worksheets.Add("Карточки");
+        List<string> headeades = new List<string>{
+                "Имя категории",
+                "Артикль",
+                "Url-картинки",
+                "Цена",
+                "Описание"};
+
+        for (int i = 0; i < headeades.Count; i++)
+        {
+            sheet.Cells[1, i + 1].Value = headeades[i];
+        }
+        sheet.View.FreezePanes(2, 1);
+
+        if (_isParsing)
+        {
+            return;
+        }
+
         try
         {
 
@@ -274,9 +302,15 @@ class Bot
                 {
                     var html = await _httpClient.HttpRequestAsync(url, cancellationToken);
                     var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl);
-                    allCards.AddRange(cards);
+                    batch.AddRange(cards);
                     totalProcessed += cards.Count;
 
+                    if (batch.Count >= batchSize)
+                    {
+                        await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
+                        currentRow += batch.Count;
+                        batch.Clear();
+                    }
                     if (totalProcessed % notifyStep < cards.Count)
                     {                    
                         await _logger.LogAsync($"Обработано карточек - {totalProcessed}");
@@ -285,15 +319,20 @@ class Bot
                     url = _htmlParser.ParseUrl(html, url);
                 }
             }
+            if (batch.Count > 0)
+            {
+                await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
+            }
+
+            await package.SaveAsAsync(new FileInfo("Card.xlsx"));
         }
         finally
         {
             _isParsing = false;
         }
         await _logger.LogAsync($"Карточки спарсены");
-        await botClient.SendMessage(chatId, $"Всего спарсено карточек {allCards.Count}", cancellationToken: cancellationToken);
-        await _excelOutput.ExcelOutput(allCards);
-        _lastRunCount = allCards.Count;
+        await botClient.SendMessage(chatId, $"Всего спарсено карточек {totalProcessed}", cancellationToken: cancellationToken);
+        _lastRunCount = totalProcessed;
         _lastRunTime = DateTime.Now;
         await SendFileAsync(botClient, chatId);
     }

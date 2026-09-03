@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using OfficeOpenXml;
 using DataLibrary;
 
 namespace ConfigurationLibrary
@@ -25,5 +26,6 @@ namespace ConfigurationLibrary
     public interface IExcelOutput
     {
         Task ExcelOutput(List<Card> cards);
+        Task<int> AppendCardsAsync(ExcelWorksheet sheet, List<Card> cards, int startRow);
     }
 }
