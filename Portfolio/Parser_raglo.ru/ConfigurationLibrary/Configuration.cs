@@ -52,10 +52,17 @@ namespace ConfigurationLibrary
         public static Proxy GetProxySettings()
         {
             string jsonText = File.ReadAllText("appsettings.json");
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
             using JsonDocument doc = JsonDocument.Parse(jsonText);
-            var proxyElement = doc.RootElement.GetProperty("Proxy");
-            var proxy = JsonSerializer.Deserialize<Proxy>(proxyElement.GetRawText());
-            return proxy;
+            if (doc.RootElement.TryGetProperty("Proxy", out var proxyElement))
+            {
+                var proxy = JsonSerializer.Deserialize<Proxy>(proxyElement.GetRawText(), options);
+                return proxy;
+            }
+            return null;
         }
     }
 }

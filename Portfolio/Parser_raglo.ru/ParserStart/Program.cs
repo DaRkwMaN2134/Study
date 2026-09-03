@@ -10,6 +10,7 @@ class Program
     private readonly IHttpClient _httpClient;
     private readonly IHtmlParser _htmlParser;
     private readonly IExcelOutput _excelOutput;
+    private static CancellationTokenSource? _parserCts = null;
     public Program(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput)
     {
         _logger = logger;
@@ -38,8 +39,8 @@ class Program
             string url = categoryUrl;
             while (!string.IsNullOrEmpty(url))
             {
-                var html = await _httpClient.HttpRequestAsync(url, token);
-                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl);
+                var html = await _httpClient.HttpRequestAsync(url, _parserCts);
+                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
                 allCards.AddRange(cards);
                 Console.Write($"Обработано карточек - {allCards.Count}\n");
                 url = _htmlParser.ParseUrl(html, url);

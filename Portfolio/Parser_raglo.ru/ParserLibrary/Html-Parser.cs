@@ -2,6 +2,7 @@
 using DataLibrary;
 using HtmlAgilityPack;
 using Microsoft.Extensions.DependencyInjection;
+using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace ParserLibrary
 
 
 
-        public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl)
+        public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource token)
         {
             var mainDoc = new HtmlDocument();
             mainDoc.LoadHtml(html);
@@ -37,7 +38,7 @@ namespace ParserLibrary
                 var cards = new ConcurrentBag<Card>();
 
                 var options = new ParallelOptions { MaxDegreeOfParallelism = 20 };
-                await Parallel.ForEachAsync(allCardNode, options, async (cardNode, token) =>
+                await Parallel.ForEachAsync(allCardNode, options, async (cardNode, cancellationToken) =>
                 {
                     try
                     {

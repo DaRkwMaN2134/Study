@@ -10,7 +10,7 @@ namespace ConfigurationLibrary
         static string logfolder = "logs/";
         static string logfile = "log_";
         private static readonly SemaphoreSlim _fileSemaphore = new SemaphoreSlim(1, 1);
-        public async Task LogAsync(string message, string level = "INFO:")
+        public async Task LogAsync(string message, string level = "INFO")
         {
             DateTime time = DateTime.Now;
             Directory.CreateDirectory(logfolder);
@@ -19,7 +19,7 @@ namespace ConfigurationLibrary
             try
             {
 
-                await File.AppendAllTextAsync(logpath, $"[{time}] {level} {message}\n");
+                await File.AppendAllTextAsync(logpath, $"[{time}] {level}: {message}\n");
             }
             catch (Exception exc)
             {
@@ -36,13 +36,19 @@ namespace ConfigurationLibrary
             DateTime time = DateTime.Now;
             string logpath = Path.Combine(logfolder + logfile + time.ToString("dd-MM-yyyy") + ".txt");
             await _fileSemaphore.WaitAsync();
+            string errorDetails = ex != null ? $" - {ex.Message}" : "";
             try
             {
-                await File.AppendAllTextAsync(logpath, $"[{time}] {level} {message} - {ex.Message}\n");
+                await File.AppendAllTextAsync(logpath, $"[{time}] {level} {message} - {errorDetails}\n");
             }
-            catch(Exception exc)
+            catch (OperationCanceledException)
             {
-                Console.WriteLine(exc.Message);
+                await File.AppendAllTextAsync(logpath, $"[{time}] [ОТМЕНА] {message} - {errorDetails}\n");
+                throw;
+            }
+            catch (Exception excn)
+            {
+                Console.WriteLine(excn.Message);
             }
             finally
             {

@@ -6,6 +6,7 @@ using OfficeOpenXml;
 using ParserLibrary;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -31,6 +32,7 @@ class Bot
     }
 
     private static CancellationTokenSource? _scheduleCts = null;
+    private static CancellationTokenSource? _parserCts = null;
     private static bool _isParsing = false;
     private static bool isWaiting = false;
     private static bool _isScheduleEnabled = false;
@@ -74,7 +76,7 @@ class Bot
         try
         {
             User me = await botClient.GetMe();
-            await _logger.LogAsync($"\nБот {me.FirstName} запущен");
+            await _logger.LogAsync($"Бот {me.FirstName} запущен");
         }
         catch (Exception ex)
         {
@@ -152,6 +154,26 @@ class Bot
         else if (messageText.StartsWith("/status"))
         {
             await status_CommandAsync(botClient, chatId);
+        }
+
+        else if (messageText.StartsWith("/stop_parser"))
+        {
+            if (_isParsing == true)
+            {
+                try
+                {
+                    _parserCts?.Cancel();                }
+                catch (Exception ex)
+                {
+                    await _logger.LogErrorAsync("Ошибка при остановке парсинга", ex);
+                }
+                finally
+                {
+                    _isParsing = false;
+                }
+
+            }
+
         }
 
         else
@@ -271,70 +293,86 @@ class Bot
             "https://raglo.ru/catalog/aksessuary-dlya-vannoy-komnaty/"
         };
 
-        using var package = new ExcelPackage();
-        var sheet = package.Workbook.Worksheets.Add("Карточки");
-        List<string> headeades = new List<string>{
+        _parserCts = new CancellationTokenSource();
+
+        try
+        {
+            using var package = new ExcelPackage();
+            var sheet = package.Workbook.Worksheets.Add("Карточки");
+            List<string> headeades = new List<string>{
                 "Имя категории",
                 "Артикль",
                 "Url-картинки",
                 "Цена",
                 "Описание"};
 
-        for (int i = 0; i < headeades.Count; i++)
-        {
-            sheet.Cells[1, i + 1].Value = headeades[i];
-        }
-        sheet.View.FreezePanes(2, 1);
-
-        if (_isParsing)
-        {
-            return;
-        }
-
-        try
-        {
-
-            _isParsing = true;
-            foreach (var categoryUrl in categories)
+            for (int i = 0; i < headeades.Count; i++)
             {
-                string url = categoryUrl;
-                while (!string.IsNullOrEmpty(url))
+                sheet.Cells[1, i + 1].Value = headeades[i];
+            }
+            sheet.View.FreezePanes(2, 1);
+
+            if (_isParsing)
+            {
+                return;
+            }
+
+            try
+            {
+
+                _isParsing = true;
+                foreach (var categoryUrl in categories)
                 {
-                    var html = await _httpClient.HttpRequestAsync(url, cancellationToken);
-                    var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl);
-                    batch.AddRange(cards);
-                    totalProcessed += cards.Count;
-
-                    if (batch.Count >= batchSize)
+                    string url = categoryUrl;
+                    while (!string.IsNullOrEmpty(url))
                     {
-                        await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
-                        currentRow += batch.Count;
-                        batch.Clear();
-                    }
-                    if (totalProcessed % notifyStep < cards.Count)
-                    {                    
-                        await _logger.LogAsync($"Обработано карточек - {totalProcessed}");
-                        await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
-                    }
-                    url = _htmlParser.ParseUrl(html, url);
-                }
-            }
-            if (batch.Count > 0)
-            {
-                await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
-            }
+                        var html = await _httpClient.HttpRequestAsync(url, _parserCts);
+                        var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
+                        batch.AddRange(cards);
+                        totalProcessed += cards.Count;
 
-            await package.SaveAsAsync(new FileInfo("Card.xlsx"));
+                        if (batch.Count >= batchSize)
+                        {
+                            await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
+                            currentRow += batch.Count;
+                            batch.Clear();
+                        }
+                        if (totalProcessed % notifyStep < cards.Count)
+                        {
+                            await _logger.LogAsync($"Обработано карточек - {totalProcessed}");
+                            await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
+                        }
+                        url = _htmlParser.ParseUrl(html, url);
+                    }
+                }
+                if (batch.Count > 0)
+                {
+                    await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
+                }
+
+                await package.SaveAsAsync(new FileInfo("Card.xlsx"));
+            }
+            catch(Exception ex)
+            {
+                await _logger.LogErrorAsync(ex.Message);
+            }
+            await _logger.LogAsync($"Карточки спарсены");
+            await botClient.SendMessage(chatId, $"Всего спарсено карточек {totalProcessed}", cancellationToken: cancellationToken);
+            _lastRunCount = totalProcessed;
+            _lastRunTime = DateTime.Now;
+            await SendFileAsync(botClient, chatId);
+        }
+        catch (OperationCanceledException)
+        {
+            await _logger.LogAsync("Парсинг был остановлен пользователем.");
+            await botClient.SendMessage(chatId, "⏹ Парсинг остановлен.");
+            return;
         }
         finally
         {
+            _parserCts?.Cancel();
             _isParsing = false;
         }
-        await _logger.LogAsync($"Карточки спарсены");
-        await botClient.SendMessage(chatId, $"Всего спарсено карточек {totalProcessed}", cancellationToken: cancellationToken);
-        _lastRunCount = totalProcessed;
-        _lastRunTime = DateTime.Now;
-        await SendFileAsync(botClient, chatId);
     }
 
     async Task SendFileAsync(ITelegramBotClient botClient, long chatId)

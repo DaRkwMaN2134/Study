@@ -8,7 +8,7 @@ namespace ParserLibrary
     {
         private static readonly HttpClient _client;
         private readonly ILogger _logger;
-        private static readonly Proxy _proxy;
+        //private static readonly Proxy _proxy;
 
 
         public Http_Client(ILogger logger)
@@ -18,7 +18,6 @@ namespace ParserLibrary
 
         static Http_Client()
         {
-            var proxySettings = Configuration.GetProxySettings();
 
             var handler = new HttpClientHandler
             {
@@ -26,15 +25,16 @@ namespace ParserLibrary
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
 
+            /*var proxySettings = Configuration.GetProxySettings();
             if (proxySettings != null && !string.IsNullOrEmpty(proxySettings.address))
             {
                 var proxy = new WebProxy(proxySettings.address, true);
-                if (!string.IsNullOrEmpty(proxySettings.username))
-                {
-                    proxy.Credentials = new NetworkCredential(proxySettings.username, proxySettings.password);
+                if (!string.IsNullOrEmpty(proxySettings.username)) 
+                { 
+                    proxy.Credentials = new NetworkCredential(proxySettings.username, proxySettings.password);   // можно добавить свой прокси
                 }
                 handler.Proxy = proxy;
-            }
+            }*/
 
             _client = new HttpClient(handler);
             _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0...");
@@ -42,7 +42,7 @@ namespace ParserLibrary
             _client.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public async Task<string> HttpRequestAsync(string url, CancellationToken token)
+        public async Task<string> HttpRequestAsync(string url, CancellationTokenSource token)
         {
             int maxRetries = 4;
             int attempt = 0;
@@ -51,7 +51,7 @@ namespace ParserLibrary
                 try
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    var responce = await _client.SendAsync(request);
+                    var responce = await _client.SendAsync(request, token.Token);
                     if (responce.IsSuccessStatusCode)
                     {
                         return await responce.Content.ReadAsStringAsync();

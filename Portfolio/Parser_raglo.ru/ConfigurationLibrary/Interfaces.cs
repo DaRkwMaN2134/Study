@@ -14,12 +14,12 @@ namespace ConfigurationLibrary
 
     public interface IHttpClient
     {
-        Task<string> HttpRequestAsync(string url, CancellationToken cancellationToken = default);
+        Task<string> HttpRequestAsync(string url, CancellationTokenSource cancellationToken = default);
     }
 
     public interface IHtmlParser
     {
-        Task<List<Card>> ParseCategoryAsync(string html, string baseUrl);
+        Task<List<Card>> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource cancellationToken);
         string ParseUrl(string html, string url);
     }
 
