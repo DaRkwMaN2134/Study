@@ -28,4 +28,11 @@ namespace ConfigurationLibrary
         Task ExcelOutput(List<Card> cards);
         Task<int> AppendCardsAsync(ExcelWorksheet sheet, List<Card> cards, int startRow);
     }
+
+    public interface IBotOutput
+    {
+        Task<Category> GetOrCreateCategoryAsync(string categoryName);
+        Task SaveProductsAsync(List<Card> cards, Category category);
+    }
+
 }
