@@ -8,7 +8,6 @@ namespace FileIOLibrary
     public class Excel_Output: IExcelOutput
     {
         private readonly ILogger _logger;
-        private ExcelWorksheet sheet;
 
         public Excel_Output(ILogger logger)
         {
@@ -17,6 +16,7 @@ namespace FileIOLibrary
         public async Task ExcelOutput(List<Card> Card)
         {
             int row = 0;
+            ExcelWorksheet sheet;
 
             if (Card == null || Card.Count == 0)
             {

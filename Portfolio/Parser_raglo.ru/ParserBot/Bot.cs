@@ -33,8 +33,8 @@ namespace ParserBot
             _excelOutput = excelOutput;
             _botToken = config.TokenLoadConfiguration();
             _config = config;
-            _dbContext = dbContext;
             _botOutput = botOutput;
+            _dbContext = dbContext;
         }
 
         private static CancellationTokenSource? _scheduleCts = null;
@@ -338,7 +338,14 @@ namespace ParserBot
                         {
                             var html = await _httpClient.HttpRequestAsync(url, _parserCts);
                             var (cards, categoryNameTask) = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
-                            categoryName = categoryNameTask;
+                            if (string.IsNullOrEmpty(categoryName))
+                            {
+                                categoryName = "Без категории";
+                            }
+                            else
+                            {
+                                categoryName = categoryNameTask;
+                            }
 
                             var category = await _botOutput.GetOrCreateCategoryAsync(categoryName);
                             await _botOutput.SaveProductsAsync(cards, category);
@@ -357,17 +364,39 @@ namespace ParserBot
                                 await _logger.LogAsync($"Обработано карточек - {totalProcessed}");
                                 await botClient.SendMessage(chatId, $"⏳ Обработано {totalProcessed} товаров...");
                             }
+
                             url = _htmlParser.ParseUrl(html, url);
                         }
 
                     }
-                    await _dbContext.SaveChangesAsync();
-                    if (batch.Count > 0)
-                    {
-                        await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);
-                    }
-
                     await package.SaveAsAsync(new FileInfo("Card.xlsx"));
+
+                    int maxRetries = 3;
+                    int attempt = 0;
+                    bool saved = false;
+
+                    while (!saved && attempt < maxRetries)
+                    {
+                        try
+                        {
+                            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                            await _dbContext.SaveChangesAsync();
+                            await transaction.CommitAsync();
+                            saved = true;
+                            await _logger.LogAsync($"Сохранено {totalProcessed} товаров (попытка {attempt + 1})");
+                        }
+                        catch (Exception ex) when (attempt < maxRetries - 1)
+                        {
+                            attempt++;
+                            await _logger.LogErrorAsync($"Ошибка сохранения (попытка {attempt}): {ex.Message}");
+                            await Task.Delay(1000 * attempt);
+                        }
+                        catch (Exception ex)
+                        {
+                            await _logger.LogErrorAsync($"Критическая ошибка сохранения: {ex.Message}");
+                            throw;
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

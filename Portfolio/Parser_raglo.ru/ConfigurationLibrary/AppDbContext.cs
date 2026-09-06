@@ -26,9 +26,6 @@ namespace ConfigurationLibrary
 
             modelBuilder.Entity<Product>()
                 .Property(p => p.Tags)
-                .HasConversion(
-                v => v,
-                v => v)
                 .HasColumnType("text[]");
         }
 

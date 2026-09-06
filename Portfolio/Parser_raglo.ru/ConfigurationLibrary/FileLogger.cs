@@ -43,12 +43,19 @@ namespace ConfigurationLibrary
             }
             catch (OperationCanceledException)
             {
-                await File.AppendAllTextAsync(logpath, $"[{time}] [ОТМЕНА] {message} - {errorDetails}\n");
-                throw;
+                try
+                {
+                    await File.AppendAllTextAsync(logpath, $"[{time}] [ОТМЕНА] {message} - {errorDetails}\n");
+                    throw;
+                }
+                catch(Exception ex1)
+                {
+                    Console.WriteLine(ex1.Message);
+                }
             }
-            catch (Exception excn)
+            catch (Exception ex2)
             {
-                Console.WriteLine(excn.Message);
+                Console.WriteLine(ex2.Message);
             }
             finally
             {

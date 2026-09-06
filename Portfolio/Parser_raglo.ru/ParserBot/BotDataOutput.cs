@@ -24,7 +24,11 @@ namespace ParserBot
             if (_categoryCache.TryGetValue(categoryName, out var cachedCategory))
                 return cachedCategory;
 
-            var category = await _dbContext.categories.FirstOrDefaultAsync(c => c.Name == categoryName);
+            if(categoryName == null)
+            {
+                categoryName = "Без категории";
+            }
+                var category = await _dbContext.categories.FirstOrDefaultAsync(c => c.Name == categoryName);
             if (category == null)
             {
                 category = new Category { Name = categoryName };
