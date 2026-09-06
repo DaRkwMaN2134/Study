@@ -19,7 +19,7 @@ namespace ConfigurationLibrary
 
     public interface IHtmlParser
     {
-        Task<List<Card>> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource cancellationToken);
+        Task<(List<Card> Cards, string Title)> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource cancellationToken);
         string ParseUrl(string html, string url);
     }
 

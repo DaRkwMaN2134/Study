@@ -23,8 +23,10 @@ namespace ParserLibrary
 
 
 
-        public async Task<List<Card>> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource token)
+        public async Task<(List<Card> Cards, string Title)> ParseCategoryAsync(string html, string baseUrl, CancellationTokenSource token)
         {
+            string categoryName = null;
+
             var mainDoc = new HtmlDocument();
             mainDoc.LoadHtml(html);
             var allCardNode = mainDoc.DocumentNode.SelectNodes("//div[contains(@class, 'product-items-block')]//div[contains(@class, 'item-wrap col')]");
@@ -32,7 +34,7 @@ namespace ParserLibrary
             {
 
                 var categoryNameNone = mainDoc.DocumentNode.SelectSingleNode("/html/head/title");
-                var categoryName = categoryNameNone?.InnerText?.Trim();
+                categoryName = categoryNameNone?.InnerText?.Trim();
                 categoryName = categoryName?.Replace("Основной каталог", "").Replace("Raglo", "").Trim() ?? "";
 
                 var cards = new ConcurrentBag<Card>();
@@ -140,11 +142,11 @@ namespace ParserLibrary
                         await _logger.LogErrorAsync($"Парсер", ex);
                     }
                 });
-                return cards.ToList();
+                return (cards.ToList(), categoryName);
             }
             else
             {
-                return new List<Card>();
+                return (new List<Card>(), categoryName);
             }
         }
 

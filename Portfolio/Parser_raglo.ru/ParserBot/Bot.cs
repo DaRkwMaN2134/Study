@@ -11,17 +11,18 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Microsoft.EntityFrameworkCore;
 
 class Bot
 {
-
     private readonly ILogger _logger;
     private readonly IHttpClient _httpClient;
     private readonly IHtmlParser _htmlParser;
     private readonly IExcelOutput _excelOutput;
     private readonly string _botToken;
     private readonly Configuration _config;
-    public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config)
+    private readonly AppDbContext _dbContext;
+    public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config, AppDbContext dbContext)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -29,6 +30,7 @@ class Bot
         _excelOutput = excelOutput;
         _botToken = config.TokenLoadConfiguration();
         _config = config;
+        _dbContext = dbContext;
     }
 
     private static CancellationTokenSource? _scheduleCts = null;
@@ -49,6 +51,7 @@ class Bot
         services.AddSingleton<IExcelOutput, Excel_Output>();
         services.AddSingleton<ILogger, FileLogger>();
         services.AddSingleton<Configuration>();
+        services.AddScoped<AppDbContext>();
         services.AddSingleton<Bot>();
 
 
@@ -276,6 +279,7 @@ class Bot
         ExcelPackage.License.SetNonCommercialPersonal("Learning");
 
         List<Card> batch = new List<Card>();
+
         int batchSize = 50;
         int currentRow = 2;
         int totalProcessed = 0;
@@ -297,6 +301,8 @@ class Bot
 
         try
         {
+            string categoryName = null;
+
             using var package = new ExcelPackage();
             var sheet = package.Workbook.Worksheets.Add("Карточки");
             List<string> headeades = new List<string>{
@@ -319,7 +325,6 @@ class Bot
 
             try
             {
-
                 _isParsing = true;
                 foreach (var categoryUrl in categories)
                 {
@@ -327,7 +332,34 @@ class Bot
                     while (!string.IsNullOrEmpty(url))
                     {
                         var html = await _httpClient.HttpRequestAsync(url, _parserCts);
-                        var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
+                        var (cards, categoryNameTask) = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
+                        categoryName = categoryNameTask;
+
+                        var category = await _dbContext.categories.FirstOrDefaultAsync<Category>(c => c.Name == categoryName);
+                        if (category == null)
+                        {
+                            category = new Category { Name = categoryName };
+                            _dbContext.categories.Add(category);
+                            await _dbContext.SaveChangesAsync();
+                        }
+                        foreach (var card in cards)
+                        {
+                            var product = new Product
+                            {
+                                Name = card.description ?? card.article,
+                                Price = decimal.TryParse(card.price, out var price) ? price : 0,
+                                CategoryId = category.Id,
+                                Article = card.article,
+                                Pictureurl = card.pictureurl,
+                            };
+                            bool exists = await _dbContext.products.AnyAsync(c => c.Article == card.article);
+                            if (exists == true)
+                            {
+                                continue;
+                            }
+                            _dbContext.products.Add(product);
+                        }
+
                         batch.AddRange(cards);
                         totalProcessed += cards.Count;
 
@@ -344,7 +376,9 @@ class Bot
                         }
                         url = _htmlParser.ParseUrl(html, url);
                     }
+                    
                 }
+                await _dbContext.SaveChangesAsync();
                 if (batch.Count > 0)
                 {
                     await _excelOutput.AppendCardsAsync(sheet, batch, currentRow);

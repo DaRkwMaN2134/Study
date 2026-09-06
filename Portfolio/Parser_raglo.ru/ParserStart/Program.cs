@@ -2,6 +2,7 @@
 using DataLibrary;
 using FileIOLibrary;
 using HtmlAgilityPack;
+using Microsoft.Extensions.DependencyInjection;
 using ParserLibrary;
 
 class Program
@@ -18,10 +19,30 @@ class Program
         _htmlParser = htmlParser;
         _excelOutput = excelOutput;
     }
-    static CancellationToken token = new CancellationToken();
-    async Task Main()
+    static CancellationTokenSource token = new CancellationTokenSource();
+    static async Task Main(string[] args)
     {
-        var allCards = new List<Card>();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IHttpClient, Http_Client>();
+        services.AddSingleton<IHtmlParser, Html_Parser>();
+        services.AddSingleton<IExcelOutput, Excel_Output>();
+        services.AddSingleton<ILogger, FileLogger>();
+        services.AddSingleton<Program>();
+
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        var start = serviceProvider.GetRequiredService<Program>();
+
+        await start.StartParser();
+
+    }
+
+
+     async Task StartParser()
+    {
+        /*var allCards = new List<Card>();
         var categories = new List<string>
         {
         "https://raglo.ru/catalog/dushevye-trapy/",
@@ -39,13 +60,25 @@ class Program
             string url = categoryUrl;
             while (!string.IsNullOrEmpty(url))
             {
-                var html = await _httpClient.HttpRequestAsync(url, _parserCts);
-                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
+                var html = await _httpClient.HttpRequestAsync(url, token);
+                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, token);
                 allCards.AddRange(cards);
                 Console.Write($"Обработано карточек - {allCards.Count}\n");
                 url = _htmlParser.ParseUrl(html, url);
             }
         }
-        await _excelOutput.ExcelOutput(allCards);
+        await _excelOutput.ExcelOutput(allCards);*/
+
+        using (var db = new AppDbContext())
+        {
+            if (!db.categories.Any())
+            {
+                var category = new Category { Name = "Душевые трапы" };
+                category.products.Add(new Product { Name = "Трап 10x10", Price = 3000, Tags = new List<string> { "нержавейка", "новинка" } });
+                db.categories.Add(category);
+                await db.SaveChangesAsync();
+            }
+        }
     }
+   
 }
