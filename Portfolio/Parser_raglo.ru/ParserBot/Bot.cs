@@ -1,6 +1,7 @@
 ﻿using ConfigurationLibrary;
 using DataLibrary;
 using FileIOLibrary;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OfficeOpenXml;
 using ParserLibrary;
@@ -11,7 +12,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Microsoft.EntityFrameworkCore;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace ParserBot
 {
@@ -43,6 +44,7 @@ namespace ParserBot
         private static DateTime _lastRunTime;
         private static int _lastRunCount;
         private static readonly ConcurrentDictionary<long, string> _userState = new ConcurrentDictionary<long, string>();
+        private static readonly ConcurrentDictionary<long, List<string>> _selectedCategories = new();
 
 
         static public async Task Main(string[] args)
@@ -79,6 +81,7 @@ namespace ParserBot
                 receiverOptions: receiverOptions,
                 cancellationToken: cts.Token
             );
+
             try
             {
                 User me = await botClient.GetMe();
@@ -94,12 +97,68 @@ namespace ParserBot
             await _logger.LogAsync($"Бот выключен");
         }
 
+        private async Task HandleCallbackQueryAsync(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
+        {
+            var chatId = callbackQuery.Message.Chat.Id;
+            var data = callbackQuery.Data;
+
+            await botClient.AnswerCallbackQuery(callbackQuery.Id, text: "Готово!", showAlert: false, cancellationToken: cancellationToken);
+
+            switch (data)
+            {
+                case "run_all":
+                    if (_isParsing)
+                    {
+                        await botClient.SendMessage(chatId, "Парсинг уже выполняется, подождите.");
+                        await _logger.LogAsync($"Парсинг уже выполняется, подождите");
+                        return;
+                    }
+                    await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
+
+                    await _logger.LogAsync($"Начался парсинг карточек");
+
+                    _ = Task.Run(() => ParserCommandAsync(botClient, chatId));
+                    await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
+
+                    await _logger.LogAsync($"Парсинг запущен в фоне...");
+                    break;
+
+                case "select_categories":
+                    await ShowCategorySelection(botClient, chatId);
+                    break;
+                default:
+                    await botClient.SendMessage(chatId, "Неизвестное действие");
+                    break;
+            }
+        }
+
         async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            if (update.Message is not { } message || message.Text is not { } messageText)
+            if (update.CallbackQuery is { } callbackQuery)
+            {
+                await HandleCallbackQueryAsync(botClient, callbackQuery, cancellationToken);
                 return;
+            }
+
+            if (update.Message is not { } message || message.Text is not { } messageText)
+            {
+                return;
+            }
 
             var chatId = message.Chat.Id;
+
+
+            if (messageText == "/start")
+            {
+                var buttons = new[]
+                {
+                    new[] { InlineKeyboardButton.WithCallbackData("▶️ Запустить все", "run_all") },
+                    new[] { InlineKeyboardButton.WithCallbackData("📋 Выбрать категории", "select_categories") }
+                };
+                var keyboard = new InlineKeyboardMarkup(buttons);
+                await botClient.SendMessage(chatId, "Выберите действие:", replyMarkup: keyboard);
+            }
+
 
             if (_userState.TryGetValue(chatId, out var state))
             {
@@ -110,8 +169,9 @@ namespace ParserBot
                 }
             }
 
-
             await _logger.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
+
+
 
             if (messageText.StartsWith("/start"))
             {
@@ -122,24 +182,6 @@ namespace ParserBot
             {
                 await botClient.SendMessage(chatId, "Доступные команды: /start, /help, /run_parser, /schedule_on, /schedule_off, /status", cancellationToken: cancellationToken);
             }
-
-
-            else if (messageText.StartsWith("/run_parser"))
-            {
-                if (_isParsing)
-                {
-                    await botClient.SendMessage(chatId, "Парсинг уже выполняется, подождите.");
-                    await _logger.LogAsync($"Парсинг уже выполняется, подождите");
-                    return;
-                }
-                await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
-                await _logger.LogAsync($"Начался парсинг карточек");
-                _ = Task.Run(() => ParserCommandAsync(botClient, chatId));
-                await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
-                await _logger.LogAsync($"Парсинг запущен в фоне...");
-
-            }
-
 
             else if (messageText.StartsWith("/schedule_on"))
             {
@@ -426,6 +468,13 @@ namespace ParserBot
                 _isParsing = false;
             }
         }
+
+
+        async Task ShowCategorySelection(ITelegramBotClient botClient, long chatId)
+        {
+
+        }
+
 
         async Task SendFileAsync(ITelegramBotClient botClient, long chatId)
         {
