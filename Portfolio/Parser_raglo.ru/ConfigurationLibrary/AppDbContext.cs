@@ -1,8 +1,9 @@
-﻿using System;
+﻿using DataLibrary;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using DataLibrary;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace ConfigurationLibrary
@@ -14,7 +15,9 @@ namespace ConfigurationLibrary
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=raglo_db;Username=postgres;Password=1234");
+            optionsBuilder.UseNpgsql("Host=localhost;Database=raglo_db;Username=postgres;Password=1234")
+                .LogTo(Console.WriteLine, LogLevel.Information)
+                .EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -21,11 +21,10 @@ namespace ParserBot
         private readonly IHttpClient _httpClient;
         private readonly IHtmlParser _htmlParser;
         private readonly IExcelOutput _excelOutput;
-        private readonly IBotOutput _botOutput;
         private readonly string _botToken;
         private readonly Configuration _config;
-        private readonly AppDbContext _dbContext;
-        public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config, AppDbContext dbContext, IBotOutput botOutput)
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config, IServiceScopeFactory serviceScopeFactory)
         {
             _logger = logger;
             _httpClient = httpClient;
@@ -33,8 +32,7 @@ namespace ParserBot
             _excelOutput = excelOutput;
             _botToken = config.TokenLoadConfiguration();
             _config = config;
-            _botOutput = botOutput;
-            _dbContext = dbContext;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         private static CancellationTokenSource? _scheduleCts = null;
@@ -136,7 +134,7 @@ namespace ParserBot
                 }
                 await botClient.SendMessage(chatId, "Начался парсинг карточек", cancellationToken: cancellationToken);
                 await _logger.LogAsync($"Начался парсинг карточек");
-                _ = Task.Run(() => ParserCommandAsync(botClient, cancellationToken, chatId));
+                _ = Task.Run(() => ParserCommandAsync(botClient, chatId));
                 await botClient.SendMessage(chatId, "Парсинг запущен в фоне...");
                 await _logger.LogAsync($"Парсинг запущен в фоне...");
 
@@ -190,10 +188,10 @@ namespace ParserBot
             }
         }
 
-        Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
-            _logger.LogErrorAsync("Произошла ошибка", exception);
-            return Task.CompletedTask;
+            await _logger.LogErrorAsync("Произошла ошибка", exception);
+            await Task.CompletedTask;
         }
 
 
@@ -236,7 +234,7 @@ namespace ParserBot
                     try
                     {
                         await timer.WaitForNextTickAsync(_scheduleCts.Token);
-                        await ParserCommandAsync(botClient, _scheduleCts.Token, chatId);
+                        await ParserCommandAsync(botClient, chatId);
                         _lastRunTime = DateTime.Now;
                     }
                     catch (OperationCanceledException)
@@ -272,14 +270,16 @@ namespace ParserBot
 
         async Task status_CommandAsync(ITelegramBotClient botClient, long chatId)
         {
+
             await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
             await botClient.SendMessage(chatId, $"Статус расписания:{_config.IntervalLoadConfiguration()}");
             await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
             await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime.ToString("HH:mm:ss dd.MM.yyyy")}");
+
         }
 
 
-        async Task ParserCommandAsync(ITelegramBotClient botClient, CancellationToken cancellationToken, long chatId)
+        async Task ParserCommandAsync(ITelegramBotClient botClient, long chatId)
         {
             ExcelPackage.License.SetNonCommercialPersonal("Learning");
 
@@ -303,6 +303,10 @@ namespace ParserBot
         };
 
             _parserCts = new CancellationTokenSource();
+
+            using var scope = _serviceScopeFactory.CreateScope();
+            var _dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var _botOutput = scope.ServiceProvider.GetRequiredService<IBotOutput>();
 
             try
             {
@@ -375,27 +379,29 @@ namespace ParserBot
                     int attempt = 0;
                     bool saved = false;
 
-                    while (!saved && attempt < maxRetries)
+                    try
                     {
-                        try
+                        var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+                        await executionStrategy.ExecuteAsync(async () =>
                         {
                             using var transaction = await _dbContext.Database.BeginTransactionAsync();
-                            await _dbContext.SaveChangesAsync();
-                            await transaction.CommitAsync();
-                            saved = true;
-                            await _logger.LogAsync($"Сохранено {totalProcessed} товаров (попытка {attempt + 1})");
-                        }
-                        catch (Exception ex) when (attempt < maxRetries - 1)
-                        {
-                            attempt++;
-                            await _logger.LogErrorAsync($"Ошибка сохранения (попытка {attempt}): {ex.Message}");
-                            await Task.Delay(1000 * attempt);
-                        }
-                        catch (Exception ex)
-                        {
-                            await _logger.LogErrorAsync($"Критическая ошибка сохранения: {ex.Message}");
-                            throw;
-                        }
+                            try
+                            {
+                                await _dbContext.SaveChangesAsync();
+                                await transaction.CommitAsync();
+                            }
+                            catch
+                            {
+                                await transaction.RollbackAsync();
+                                throw;
+                            }
+                        });
+                        await _logger.LogAsync($"Сохранено {totalProcessed} товаров");
+                    }
+                    catch (Exception ex)
+                    {
+                        await _logger.LogErrorAsync($"Критическая ошибка сохранения: {ex.Message}");
+                        throw;
                     }
                 }
                 catch (Exception ex)
@@ -403,7 +409,7 @@ namespace ParserBot
                     await _logger.LogErrorAsync(ex.Message);
                 }
                 await _logger.LogAsync($"Карточки спарсены");
-                await botClient.SendMessage(chatId, $"Всего спарсено карточек {totalProcessed}", cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, $"Всего спарсено карточек {totalProcessed}", cancellationToken: _parserCts.Token);
                 _lastRunCount = totalProcessed;
                 _lastRunTime = DateTime.Now;
                 await SendFileAsync(botClient, chatId);
