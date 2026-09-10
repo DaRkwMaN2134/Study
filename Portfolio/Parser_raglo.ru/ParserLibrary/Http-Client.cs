@@ -73,6 +73,10 @@ namespace ParserLibrary
                         throw new HttpRequestException($"Ошибка запроса: {responce.StatusCode}");
                     }
                 }
+                catch (OperationCanceledException) when (token.Token.IsCancellationRequested)
+                {
+                    throw;
+                }
                 catch (Exception ex) when (attempt < maxRetries - 1)
                 {
                     await _logger.LogErrorAsync($"HTTP-Client", ex);
