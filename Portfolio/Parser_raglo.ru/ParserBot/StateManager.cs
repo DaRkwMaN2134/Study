@@ -11,6 +11,7 @@ namespace ParserBot
         private readonly ConcurrentDictionary<long, string> _userState = new ConcurrentDictionary<long, string>();
         private readonly ConcurrentDictionary<long, List<string>> _selectedCategories = new();
         private readonly ConcurrentDictionary<long, int> _categoryMessageIds = new();
+        private readonly ConcurrentDictionary<long, int> _activeMenuMessageId = new();
 
 
         public List<string> GetSelectedCategories(long chatId)
@@ -76,6 +77,27 @@ namespace ParserBot
         public void RemoveUserState(long chatId)
         {
             _userState.TryRemove(chatId, out _);
+        }
+
+
+        public void SetActiveMenu(long chatId, int messageId)
+        {
+            _activeMenuMessageId[chatId] = messageId;
+        }
+        public int? GetActiveMenu(long chatId)
+        {
+            if (_activeMenuMessageId.TryGetValue(chatId, out var messageId))
+            {
+                return messageId;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public void RemoveActiveMenu(long chatId)
+        {
+            _activeMenuMessageId.TryRemove(chatId, out _);
         }
     }
 }

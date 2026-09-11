@@ -98,6 +98,14 @@ namespace ParserBot
             {
                 AllowedUpdates = Array.Empty<UpdateType>()
             };
+            try
+            {
+                await botClient.DropPendingUpdates();
+            }
+            catch(Exception ex)
+            {
+
+            }
 
             botClient.StartReceiving(
                 updateHandler: HandleUpdateAsync,
@@ -148,7 +156,7 @@ namespace ParserBot
 
             if (messageText.StartsWith("/start"))
             {
-                await botClient.SendMessage(chatId, "Выберите действие:", replyMarkup: BuildMainMenuKeyboard());
+                await ShowMainMenu(botClient, chatId);
             }
         }
 

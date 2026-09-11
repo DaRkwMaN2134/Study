@@ -42,7 +42,7 @@ class Program
 
      async Task StartParser()
     {
-        /*var allCards = new List<Card>();
+        var allCards = new List<Card>();
         var categories = new List<string>
         {
         "https://raglo.ru/catalog/dushevye-trapy/",
@@ -61,13 +61,13 @@ class Program
             while (!string.IsNullOrEmpty(url))
             {
                 var html = await _httpClient.HttpRequestAsync(url, token);
-                var cards = await _htmlParser.ParseCategoryAsync(html, categoryUrl, token);
+                (var cards, var title) = await _htmlParser.ParseCategoryAsync(html, categoryUrl, token);
                 allCards.AddRange(cards);
                 Console.Write($"Обработано карточек - {allCards.Count}\n");
                 url = _htmlParser.ParseUrl(html, url);
             }
         }
-        await _excelOutput.ExcelOutput(allCards);*/
+        await _excelOutput.ExcelOutput(allCards);
 
         using (var db = new AppDbContext())
         {

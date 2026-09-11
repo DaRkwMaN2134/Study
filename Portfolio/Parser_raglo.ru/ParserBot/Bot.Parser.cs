@@ -92,14 +92,8 @@ namespace ParserBot
                         {
                             var html = await _httpClient.HttpRequestAsync(url, _parserCts);
                             var (cards, categoryNameTask) = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
-                            if (string.IsNullOrEmpty(categoryName))
-                            {
-                                categoryName = "Без категории";
-                            }
-                            else
-                            {
-                                categoryName = categoryNameTask;
-                            }
+
+                            categoryName = categoryNameTask ?? "Без категории";
 
                             var category = await _botOutput.GetOrCreateCategoryAsync(categoryName);
                             await _botOutput.SaveProductsAsync(cards, category);

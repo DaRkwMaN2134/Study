@@ -175,5 +175,24 @@ namespace ParserBot
             var message = await botClient.SendMessage(chatId, "Выберите категории (нажмите для выбора/отмены):", replyMarkup: keyboard);
             _stateManager.SetCategoryMessageId(chatId, message.MessageId);
         }
+
+        async Task ShowMainMenu(ITelegramBotClient botClient, long chatId)
+        {
+            int? activeMenuId = _stateManager.GetActiveMenu(chatId);
+            if (activeMenuId != null)
+            {
+                try
+                {
+                    await botClient.DeleteMessage(chatId, activeMenuId.Value);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Этап ошибка - {ex.Message}");
+                }
+            }
+            var lastMenuMessageId = await botClient.SendMessage(chatId, "Выберите действие", replyMarkup: BuildMainMenuKeyboard());
+            activeMenuId = lastMenuMessageId.MessageId;
+            _stateManager.SetActiveMenu(chatId, activeMenuId.Value);
+        }
     }
 }
