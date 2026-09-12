@@ -130,6 +130,7 @@ namespace ParserBot
         }
         async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
+
             if (update.CallbackQuery is { } callbackQuery)
             {
                 await HandleCallbackQueryAsync(botClient, callbackQuery, cancellationToken);
@@ -143,14 +144,39 @@ namespace ParserBot
 
             var chatId = message.Chat.Id;
             var state = _stateManager.GetUserState(chatId);
-            if (state != null)
+
+
+            if (_stateManager.IsAuthorized() == false)
             {
-                if (state == "awaiting_interval")
+                if (state == "awaiting_password")
                 {
-                    await schedule_edit_CommandAsync(botClient, chatId, messageText);
+                    if (message.Text == _config.PasswordLoadConfiguration())
+                    {
+                        await botClient.SendMessage(chatId, "Авторизация успешна");
+                        _stateManager.Authorize();
+                        _stateManager.RemoveUserState(chatId);
+                        await ShowMainMenu(botClient, chatId);
+                        return;
+                    }
+                    else
+                    {
+                        await botClient.SendMessage(chatId, "Пароль неправильный. Повторите попытку");
+                        return;
+                    }
+                }
+                else
+                {
+                    _stateManager.SetUserState(chatId, "awaiting_password");
+                    await botClient.SendMessage(chatId, "Введите пароль");
                     return;
                 }
             }
+            if (state == "awaiting_interval")
+            {
+                await schedule_edit_CommandAsync(botClient, chatId, messageText);
+                return;
+            }
+
 
             await _logger.LogAsync($"Получено сообщение: '{messageText}' от пользователя {chatId}");
 

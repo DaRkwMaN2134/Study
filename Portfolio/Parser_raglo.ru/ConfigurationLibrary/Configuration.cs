@@ -64,5 +64,17 @@ namespace ConfigurationLibrary
             }
             return null;
         }
+
+        public string PasswordLoadConfiguration()
+        {
+            string jsonText = File.ReadAllText("appsettings.json");
+
+            using JsonDocument doc = JsonDocument.Parse(jsonText);
+
+            string password = doc.RootElement
+                .GetProperty("BotPassword")
+                .GetString();
+            return password;
+        }
     }
 }

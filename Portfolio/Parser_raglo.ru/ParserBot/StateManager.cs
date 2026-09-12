@@ -12,6 +12,7 @@ namespace ParserBot
         private readonly ConcurrentDictionary<long, List<string>> _selectedCategories = new();
         private readonly ConcurrentDictionary<long, int> _categoryMessageIds = new();
         private readonly ConcurrentDictionary<long, int> _activeMenuMessageId = new();
+        private bool _isAuthorized = false;
 
 
         public List<string> GetSelectedCategories(long chatId)
@@ -98,6 +99,16 @@ namespace ParserBot
         public void RemoveActiveMenu(long chatId)
         {
             _activeMenuMessageId.TryRemove(chatId, out _);
+        }
+
+        public bool IsAuthorized()
+        {
+            return _isAuthorized;
+        }
+
+        public void Authorize()
+        {
+            _isAuthorized = true;
         }
     }
 }

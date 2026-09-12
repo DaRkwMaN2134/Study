@@ -51,6 +51,12 @@ namespace ParserBot
             var messageId = callbackQuery.Message.MessageId;
             var data = callbackQuery.Data;
 
+            if (_stateManager.IsAuthorized() == false)
+            {
+                await botClient.SendMessage(chatId, "Сначала введите пароль");
+                return;
+            }
+
             Console.WriteLine(data);
 
             if (data.StartsWith("cat_"))
