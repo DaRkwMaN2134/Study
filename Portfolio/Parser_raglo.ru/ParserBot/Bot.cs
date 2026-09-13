@@ -28,7 +28,8 @@ namespace ParserBot
         private readonly Configuration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly StateManager _stateManager;
-        public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config, IServiceScopeFactory serviceScopeFactory, StateManager stateManager)
+        private readonly StateStorage _stateStorage;
+        public Bot(ILogger logger, IHttpClient httpClient, IHtmlParser htmlParser, IExcelOutput excelOutput, Configuration config, IServiceScopeFactory serviceScopeFactory, StateManager stateManager, StateStorage stateStorage)
         {
             _logger = logger;
             _httpClient = httpClient;
@@ -38,6 +39,7 @@ namespace ParserBot
             _config = config;
             _serviceScopeFactory = serviceScopeFactory;
             _stateManager = stateManager;
+            _stateStorage = stateStorage;
         }
 
         private static CancellationTokenSource? _scheduleCts = null;
@@ -81,6 +83,7 @@ namespace ParserBot
             services.AddScoped<AppDbContext>();
             services.AddScoped<IBotOutput, BotDataOutput>();
             services.AddSingleton<StateManager>();
+            services.AddSingleton<StateStorage>();
             services.AddSingleton<Bot>();
 
 
@@ -146,14 +149,14 @@ namespace ParserBot
             var state = _stateManager.GetUserState(chatId);
 
 
-            if (_stateManager.IsAuthorized() == false)
+            if (_stateStorage.IsAuthorized() == false)
             {
                 if (state == "awaiting_password")
                 {
                     if (message.Text == _config.PasswordLoadConfiguration())
                     {
                         await botClient.SendMessage(chatId, "Авторизация успешна");
-                        _stateManager.Authorize();
+                        await _stateStorage.Authorize(chatId);
                         _stateManager.RemoveUserState(chatId);
                         await ShowMainMenu(botClient, chatId);
                         return;

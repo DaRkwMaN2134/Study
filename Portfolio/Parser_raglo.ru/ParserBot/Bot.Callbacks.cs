@@ -51,7 +51,7 @@ namespace ParserBot
             var messageId = callbackQuery.Message.MessageId;
             var data = callbackQuery.Data;
 
-            if (_stateManager.IsAuthorized() == false)
+            if (_stateStorage.IsAuthorized() == false)
             {
                 await botClient.SendMessage(chatId, "Сначала введите пароль");
                 return;
@@ -88,7 +88,7 @@ namespace ParserBot
 
                             _ = Task.Run(() => ParserCommandAsync(botClient, chatId));
                             await botClient.EditMessageText(chatId, messageId, "✅ Парсинг запущен", replyMarkup: null);
-
+                            await _stateStorage.ClearActiveMenu();
                             await _logger.LogAsync($"Парсинг запущен в фоне...");
                             break;
                         case "menu_categories" or "select_categories":
@@ -100,22 +100,27 @@ namespace ParserBot
                         case "menu_status":
                             await botClient.EditMessageText(chatId, messageId, "✅ Статус открыт", replyMarkup: null);
                             await status_CommandAsync(botClient, chatId);
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "menu_stop":
                             _parserCts?.Cancel();
                             await botClient.EditMessageText(chatId, messageId, "⏹ Парсинг остановлен", replyMarkup: null);
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "menu_help":
                             await botClient.EditMessageText(chatId, messageId, "✅ Доступные команды показаны", replyMarkup: null);
                             await botClient.SendMessage(chatId, "Доступные команды: ...");
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "schedule_on":
                             await botClient.EditMessageText(chatId, messageId, "✅ Расписание включено", replyMarkup: null);
                             await schedule_on_CommandAsync(botClient, chatId);
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "schedule_off":
                             await botClient.EditMessageText(chatId, messageId, "⏹ Расписание выключено", replyMarkup: null);
                             await schedule_off_CommandAsync(botClient, chatId);
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "schedule_edit":
                             _stateManager.SetUserState(chatId, "awaiting_interval");
@@ -125,6 +130,7 @@ namespace ParserBot
                             new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
                             });
                             await botClient.EditMessageText(chatId, messageId, "Введите интервал в чат", replyMarkup: cancelKeyboard);
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         case "menu_back":
                             _stateManager.RemoveUserState(chatId);
@@ -148,7 +154,7 @@ namespace ParserBot
                                 .ToList());
                             _ = Task.Run(() => ParserCommandAsync(botClient, chatId, selectedUrls));
                             _stateManager.ClearSelectedCategories(chatId);
-
+                            await _stateStorage.ClearActiveMenu();
                             break;
                         
                         case "stop_parser":
@@ -170,6 +176,7 @@ namespace ParserBot
         async Task ShowCategorySelection(ITelegramBotClient botClient, long chatId, int menuMessageId)
         {
             _stateManager.ClearSelectedCategories(chatId);
+            await _stateStorage.ClearActiveMenu();
             await botClient.DeleteMessage(chatId, menuMessageId);
 
             var buttons = _categoryNames.Select((name, index) =>
@@ -184,7 +191,7 @@ namespace ParserBot
 
         async Task ShowMainMenu(ITelegramBotClient botClient, long chatId)
         {
-            int? activeMenuId = _stateManager.GetActiveMenu(chatId);
+            int? activeMenuId = _stateStorage.GetActiveMenuId();
             if (activeMenuId != null)
             {
                 try
@@ -198,7 +205,7 @@ namespace ParserBot
             }
             var lastMenuMessageId = await botClient.SendMessage(chatId, "Выберите действие", replyMarkup: BuildMainMenuKeyboard());
             activeMenuId = lastMenuMessageId.MessageId;
-            _stateManager.SetActiveMenu(chatId, activeMenuId.Value);
+            await _stateStorage.SetActiveMenu(activeMenuId.Value);
         }
     }
 }
