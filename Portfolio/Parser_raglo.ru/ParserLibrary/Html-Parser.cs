@@ -95,7 +95,7 @@ namespace ParserLibrary
                             var cardUrl = baseUrl + article + "/";
                             try
                             {
-                                currentCardHtml = await _httpClient.HttpRequestAsync(cardUrl, token);
+                                currentCardHtml = await _httpClient.HttpRequestAsync(cardUrl, token.Token);
                             }
                             catch (Exception ex)
                             {

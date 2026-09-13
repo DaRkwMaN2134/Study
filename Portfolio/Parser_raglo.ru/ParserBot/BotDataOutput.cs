@@ -2,6 +2,7 @@
 using DataLibrary;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,7 +12,8 @@ namespace ParserBot
     {
         private readonly AppDbContext _dbContext;
         private readonly ILogger _logger;
-        private readonly Dictionary<string, Category> _categoryCache = new();
+        private readonly ConcurrentDictionary<string, Category> _categoryCache = new();
+        private readonly HashSet<string> _savedArticles = new();
 
         public BotDataOutput(AppDbContext dbContext, ILogger logger)
         {
@@ -52,6 +54,12 @@ namespace ParserBot
             {
                 if (existingArticles.Contains(card.article))
                 {
+                    await _logger.LogAsync($"SKIP: {card.article}");
+                    continue;
+                }
+
+                if (_savedArticles.Add(card.article) == false)
+                {
                     continue;
                 }
 
@@ -63,6 +71,7 @@ namespace ParserBot
                     Article = card.article,
                     Pictureurl = card.pictureurl,
                 };
+
                 _dbContext.products.Add(product);
             }
         }

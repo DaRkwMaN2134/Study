@@ -32,6 +32,10 @@ namespace ParserBot
             await botClient.SendMessage(chatId, $"Статус расписания:{_isScheduleEnabled}");
             await botClient.SendMessage(chatId, $"Статус расписания:{_config.IntervalLoadConfiguration()}");
             await botClient.SendMessage(chatId, $"Последнее количество товаров:{_lastRunCount}");
+            if(_lastRunTime == new DateTime(1, 1, 1, 0, 0, 0))
+            {
+                await botClient.SendMessage(chatId, "Никогда");
+            }
             await botClient.SendMessage(chatId, $"🕒Последний запуск::{_lastRunTime.ToString("HH:mm:ss dd.MM.yyyy")}");
 
         }
@@ -69,6 +73,8 @@ namespace ParserBot
                     }
                 }
                 _isScheduleEnabled = false;
+                _scheduleCts?.Cancel();
+                _scheduleCts?.Dispose();
             });
         }
 

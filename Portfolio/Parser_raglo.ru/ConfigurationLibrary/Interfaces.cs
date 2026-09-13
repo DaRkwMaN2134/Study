@@ -14,7 +14,7 @@ namespace ConfigurationLibrary
 
     public interface IHttpClient
     {
-        Task<string> HttpRequestAsync(string url, CancellationTokenSource cancellationToken = default);
+        Task<string> HttpRequestAsync(string url, CancellationToken cancellationToken = default);
     }
 
     public interface IHtmlParser

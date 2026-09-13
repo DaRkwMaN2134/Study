@@ -76,5 +76,17 @@ namespace ConfigurationLibrary
                 .GetString();
             return password;
         }
+
+        public string DbPasswordLoadConfiguration()
+        {
+            string jsonText = File.ReadAllText("appsettings.json");
+
+            using JsonDocument doc = JsonDocument.Parse(jsonText);
+
+            string password = doc.RootElement
+                .GetProperty("DbPassword")
+                .GetString();
+            return password;
+        }
     }
 }

@@ -18,7 +18,6 @@ namespace ConfigurationLibrary
             await _fileSemaphore.WaitAsync();
             try
             {
-
                 await File.AppendAllTextAsync(logpath, $"[{time}] {level}: {message}\n");
             }
             catch (Exception exc)

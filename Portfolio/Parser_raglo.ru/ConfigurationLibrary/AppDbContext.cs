@@ -12,12 +12,17 @@ namespace ConfigurationLibrary
     {
         public DbSet<Category> categories { get; set; }
         public DbSet<Product> products { get; set; }
+        private Configuration _conf;
+        public AppDbContext(Configuration conf)
+        {
+            _conf = conf;
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=raglo_db;Username=postgres;Password=1234")
-                .LogTo(Console.WriteLine, LogLevel.Information)
-                .EnableSensitiveDataLogging();
+            var password = _conf.DbPasswordLoadConfiguration();
+            optionsBuilder.UseNpgsql($"Host=localhost;Database=raglo_db;Username=postgres;Password={password}")
+                .LogTo(Console.WriteLine, LogLevel.Information);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

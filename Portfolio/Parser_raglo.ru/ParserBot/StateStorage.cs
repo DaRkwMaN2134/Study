@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConfigurationLibrary;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
@@ -12,60 +13,78 @@ namespace ParserBot
         private long _authorizedChatId = 0;
         private int _activeMenuMessageId = 0;
         private readonly string path = "state.json";
-        private readonly string sample = "{\r\n  \"ChatId\": 1833123665,\r\n  \"IsAuthorized\": true,\r\n  \"ActiveMenuMessageId\": 0 \r\n}";
-        public StateStorage()
+        private readonly string sample = "{\r\n  \"ChatId\": 0,\r\n  \"IsAuthorized\": false,\r\n  \"ActiveMenuMessageId\": 0 \r\n}";
+        private readonly ILogger _logger;
+        private static readonly SemaphoreSlim _fileLock = new(1, 1);
+        public StateStorage(ILogger logger)
         {
+            _logger = logger;
             LoadState();
         }
-        public void LoadState()
+        public async Task LoadState()
         {
-            if (File.Exists(path) == true)
+            await _fileLock.WaitAsync();
+            try
             {
-                try
+                if (File.Exists(path) == true)
                 {
-                    string jsonString = File.ReadAllText(path);
-                    var options = new JsonSerializerOptions
+                    try
                     {
-                        PropertyNameCaseInsensitive = true
-                    };
-                    BotState json = JsonSerializer.Deserialize<BotState>(jsonString, options);
-                    _authorizedChatId = json.ChatId;
-                    _isAuthorized = json.IsAuthorized;
-                    _activeMenuMessageId = json.ActiveMenuMessageId;
-                    Console.WriteLine($"{json.ChatId}, {json.IsAuthorized}, {json.ActiveMenuMessageId} ");
+                        string jsonString = File.ReadAllText(path);
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        };
+                        BotState json = JsonSerializer.Deserialize<BotState>(jsonString, options);
+                        _authorizedChatId = json.ChatId;
+                        _isAuthorized = json.IsAuthorized;
+                        _activeMenuMessageId = json.ActiveMenuMessageId;
+                    }
+                    catch (Exception ex)
+                    {
+                        await _logger.LogErrorAsync("Произошла ошибка", ex);
+                    }
                 }
-                catch(Exception ex)
+                else
                 {
-
+                    File.Create(path).Close();
+                    File.WriteAllText(path, sample);
                 }
             }
-            else
+            finally
             {
-                File.Create(path).Close();
-                File.WriteAllText(path, sample);
+                _fileLock.Release();
             }
         }
 
         private async Task SaveStateAsync()
         {
-            var options = new JsonSerializerOptions
+            await _fileLock.WaitAsync();
+            try
             {
-                WriteIndented = true
-            };
-            BotState state = new BotState
-            {
-                ChatId = _authorizedChatId,
-                IsAuthorized = _isAuthorized,
-                ActiveMenuMessageId = _activeMenuMessageId
-            };
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
+                BotState state = new BotState
+                {
+                    ChatId = _authorizedChatId,
+                    IsAuthorized = _isAuthorized,
+                    ActiveMenuMessageId = _activeMenuMessageId
+                };
 
-            string json = JsonSerializer.Serialize(state, options);
-            await File.WriteAllTextAsync(path, json);
+                string json = JsonSerializer.Serialize(state, options);
+                await File.WriteAllTextAsync(path, json);
+            }
+            finally
+            {
+                _fileLock.Release();
+            }
         }
 
-        public bool IsAuthorized()
+        public bool IsAuthorized(long chatId)
         {
-            return _isAuthorized;
+            return _isAuthorized && chatId == _authorizedChatId;
         }
 
         public async Task Authorize(long chatId)

@@ -32,7 +32,7 @@ namespace ParserBot
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                await _logger.LogErrorAsync("Произошла ошибка", ex);
             }
         }
 
@@ -44,20 +44,19 @@ namespace ParserBot
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                await _logger.LogErrorAsync("Произошла ошибка", ex);
             }
 
             var chatId = callbackQuery.Message.Chat.Id;
             var messageId = callbackQuery.Message.MessageId;
             var data = callbackQuery.Data;
 
-            if (_stateStorage.IsAuthorized() == false)
+            if (_stateStorage.IsAuthorized(chatId) == false)
             {
                 await botClient.SendMessage(chatId, "Сначала введите пароль");
                 return;
             }
 
-            Console.WriteLine(data);
 
             if (data.StartsWith("cat_"))
             {
@@ -169,7 +168,7 @@ namespace ParserBot
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    await _logger.LogErrorAsync("Произошла ошибка", ex);
                 }
             }
         }
@@ -192,6 +191,7 @@ namespace ParserBot
         async Task ShowMainMenu(ITelegramBotClient botClient, long chatId)
         {
             int? activeMenuId = _stateStorage.GetActiveMenuId();
+            Message lastMenuMessageId = null;
             if (activeMenuId != null)
             {
                 try
@@ -200,10 +200,17 @@ namespace ParserBot
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Этап ошибка - {ex.Message}");
+                    await _logger.LogErrorAsync("Произошла ошибка", ex);
                 }
             }
-            var lastMenuMessageId = await botClient.SendMessage(chatId, "Выберите действие", replyMarkup: BuildMainMenuKeyboard());
+            try
+            {
+                lastMenuMessageId = await botClient.SendMessage(chatId, "Выберите действие", replyMarkup: BuildMainMenuKeyboard());
+            }
+            catch(Exception ex)
+            {
+                await _logger.LogErrorAsync($"Критическая ошибка сохранения: {ex.Message}");
+            }
             activeMenuId = lastMenuMessageId.MessageId;
             await _stateStorage.SetActiveMenu(activeMenuId.Value);
         }

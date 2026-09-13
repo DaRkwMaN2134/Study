@@ -46,9 +46,11 @@ namespace ParserBot
 
             _parserCts = new CancellationTokenSource();
 
-            using var scope = _serviceScopeFactory.CreateScope();
-            var _dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var _botOutput = scope.ServiceProvider.GetRequiredService<IBotOutput>();
+
+            if (File.Exists("Card.xlsx"))
+            {
+                File.Delete("Card.xlsx");
+            }
 
 
             if (selectedUrls != null)
@@ -61,6 +63,9 @@ namespace ParserBot
             }
             try
             {
+                using var scope = _serviceScopeFactory.CreateScope();
+                var _dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var _botOutput = scope.ServiceProvider.GetRequiredService<IBotOutput>();
 
                 using var package = new ExcelPackage();
                 var sheet = package.Workbook.Worksheets.Add("Карточки");
@@ -90,7 +95,7 @@ namespace ParserBot
                         string url = categoryUrl;
                         while (!string.IsNullOrEmpty(url))
                         {
-                            var html = await _httpClient.HttpRequestAsync(url, _parserCts);
+                            var html = await _httpClient.HttpRequestAsync(url, _parserCts.Token);
                             var (cards, categoryNameTask) = await _htmlParser.ParseCategoryAsync(html, categoryUrl, _parserCts);
 
                             categoryName = categoryNameTask ?? "Без категории";
@@ -131,6 +136,8 @@ namespace ParserBot
                             using var transaction = await _dbContext.Database.BeginTransactionAsync();
                             try
                             {
+                                var pending = _dbContext.ChangeTracker.Entries<Product>().Count(e => e.State == EntityState.Added);
+                                await _logger.LogAsync($"Перед финальным SaveChangesAsync: {pending} продуктов в очереди");
                                 await _dbContext.SaveChangesAsync();
                                 await transaction.CommitAsync();
                             }
@@ -171,6 +178,7 @@ namespace ParserBot
             finally
             {
                 _parserCts?.Cancel();
+                _parserCts?.Dispose();
                 _isParsing = false;
             }
         }

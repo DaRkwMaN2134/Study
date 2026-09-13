@@ -107,7 +107,7 @@ namespace ParserBot
             }
             catch(Exception ex)
             {
-
+                await _logger.LogErrorAsync("Произошла ошибка", ex);
             }
 
             botClient.StartReceiving(
@@ -149,7 +149,7 @@ namespace ParserBot
             var state = _stateManager.GetUserState(chatId);
 
 
-            if (_stateStorage.IsAuthorized() == false)
+            if (_stateStorage.IsAuthorized(chatId) == false)
             {
                 if (state == "awaiting_password")
                 {

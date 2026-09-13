@@ -42,7 +42,7 @@ namespace ParserLibrary
             _client.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public async Task<string> HttpRequestAsync(string url, CancellationTokenSource token)
+        public async Task<string> HttpRequestAsync(string url, CancellationToken token)
         {
             int maxRetries = 4;
             int attempt = 0;
@@ -51,7 +51,7 @@ namespace ParserLibrary
                 try
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    var responce = await _client.SendAsync(request, token.Token);
+                    var responce = await _client.SendAsync(request, token);
                     if (responce.IsSuccessStatusCode)
                     {
                         return await responce.Content.ReadAsStringAsync();
@@ -73,15 +73,21 @@ namespace ParserLibrary
                         throw new HttpRequestException($"Ошибка запроса: {responce.StatusCode}");
                     }
                 }
-                catch (OperationCanceledException) when (token.Token.IsCancellationRequested)
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
+                    await _logger.LogAsync("Программа остановлена");
                     throw;
                 }
                 catch (Exception ex) when (attempt < maxRetries - 1)
                 {
                     await _logger.LogErrorAsync($"HTTP-Client", ex);
                     attempt++;
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), token);
+                }
+                catch(Exception ex)
+                {
+                    await _logger.LogErrorAsync($"HTTP-Client", ex);
+                    throw;
                 }
             }
             throw new Exception("Превышено число попыток");
