@@ -1,11 +1,16 @@
 using ConfigurationLibrary;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-var connString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connString));
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("Postgres"),
+        b => b.MigrationsAssembly("ConfigurationLibrary") // Указывает, где искать и создавать миграции
+    ));
 
 var app = builder.Build();
 app.MapGet("/", () => "Hello World!");

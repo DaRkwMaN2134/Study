@@ -8,8 +8,6 @@ namespace DataLibrary
         public string? FirstName { get; set; }
         public int Points { get; set; }
         public DateTime? PremiumUntil { get; set; }
-        public long? ReferrerId { get; set; }
-        public User? Referrer { get; set; }
         public List<Referral> ReferralsAsReferrer { get; set; } = new();
         public Referral? ReferralRecord { get; set; }
         public DateTime RegisteredAt { get; set; }

@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Project Path="BotStart/BotStart.csproj" />
+  <Project Path="ConfigurationLibrary/ConfigurationLibrary.csproj" />
+  <Project Path="DataLibrary/DataLibrary.csproj" />
+</Solution>
