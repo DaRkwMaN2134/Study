@@ -17,8 +17,11 @@ namespace ConfigurationLibrary
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>().HasKey(u => u.ChatId);
-
+            modelBuilder.Entity<User>(u =>
+            {
+                u.HasKey(user => user.ChatId);
+                u.Property(user => user.ChatId).ValueGeneratedNever();
+            });
 
             modelBuilder.Entity<Referral>().HasKey(r => r.Id);
             modelBuilder.Entity<Referral>(refr =>
