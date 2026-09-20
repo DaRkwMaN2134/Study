@@ -1,11 +1,15 @@
 ﻿using ConfigurationLibrary;
+using DTOLibrary;
+using DataLibrary;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using static ConfigurationLibrary.Interfaces;
 
 namespace BotStart
 {
@@ -16,6 +20,7 @@ namespace BotStart
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly CancellationTokenSource _cts = new();
+        private string? _botUsername;
 
         public Bot(ITelegramBotClient botClient, ILogger<Bot> logger, IConfiguration config, IServiceScopeFactory serviceScopeFactory)
         {
@@ -25,7 +30,7 @@ namespace BotStart
             _serviceScopeFactory = serviceScopeFactory;
         }
 
-        public Task runBotAsync()
+        public async Task runBotAsync()
         {
             
             var receiverOptions = new ReceiverOptions
@@ -39,7 +44,11 @@ namespace BotStart
                 receiverOptions: receiverOptions,
                 cancellationToken: _cts.Token
                 );
-            return Task.CompletedTask;
+
+            var me = await _botClient.GetMe();
+            _botUsername = me.Username;
+            Console.WriteLine(_botUsername);
+
         }
 
         async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -54,6 +63,30 @@ namespace BotStart
             {
                 new[] { InlineKeyboardButton.WithCallbackData("Баланс", "balance"), InlineKeyboardButton.WithCallbackData("Моя ссылка", "my_link"), InlineKeyboardButton.WithCallbackData("Услуги", "services") },
                 new[] { InlineKeyboardButton.WithCallbackData("Помощь", "help"), InlineKeyboardButton.WithCallbackData("Настройки", "settings"), InlineKeyboardButton.WithCallbackData("Мои рефералы", "my_refs")}
+            });
+        }
+
+        private InlineKeyboardMarkup BuildServicesKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
+            });
+        }
+
+        private InlineKeyboardMarkup BuildHelpKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
+            });
+        }
+
+        private InlineKeyboardMarkup BuildSettingsKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
             });
         }
     }

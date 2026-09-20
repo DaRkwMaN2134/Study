@@ -17,7 +17,7 @@ namespace BotStart
         {
             _dbContext = dbContext;
         }
-        public async Task GetOrCreateUserAsync(UserRegistrationDto dto)
+        public async Task CheckOrCreateUserAsync(UserRegistrationDto dto)
         {
             var chatId = dto.ChatId;
  
@@ -46,6 +46,21 @@ namespace BotStart
                 }
             }
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<User?> GetUserAsync(long chatId)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.ChatId == chatId);
+            return user;
+        }
+
+        public async Task<List<Referral>> GetReferralsAsync(long chatId)
+        {
+            var referrerList = await _dbContext.Referrals
+                .Where(r => r.ReferrerId == chatId)
+                .Include(r => r.InvitedUser)
+                .ToListAsync();
+            return referrerList;
         }
     }
 }

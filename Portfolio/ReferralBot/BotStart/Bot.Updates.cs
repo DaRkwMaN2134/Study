@@ -13,6 +13,7 @@ using static ConfigurationLibrary.Interfaces;
 
 namespace BotStart
 {
+
     public partial class Bot
     {
         private readonly bool isBlocked;
@@ -25,6 +26,7 @@ namespace BotStart
             }
             if (update.CallbackQuery is { } callbackQuery)
             {
+                await HandleCallbackQueryAsync(callbackQuery, cancellationToken);
                 return;
             }
             if (update.Message is not { } message || message.Text is not { } messageText)
@@ -53,7 +55,7 @@ namespace BotStart
                 using (var scope = _serviceScopeFactory.CreateAsyncScope())
                 {
                     var botWrite = scope.ServiceProvider.GetRequiredService<IBotWrite>();
-                    await botWrite.GetOrCreateUserAsync(registration);
+                    await botWrite.CheckOrCreateUserAsync(registration);
                 }
                 await ShowMainMenu(chatId);
 

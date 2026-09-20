@@ -10,7 +10,9 @@ namespace ConfigurationLibrary
     {
         public interface IBotWrite
         {
-            public Task GetOrCreateUserAsync(UserRegistrationDto dto);
+            public Task CheckOrCreateUserAsync(UserRegistrationDto dto);
+            public Task<User?> GetUserAsync(long chatId);
+            public Task<List<Referral>> GetReferralsAsync(long chatId);
         }
     }
 }
