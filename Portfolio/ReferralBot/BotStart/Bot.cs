@@ -38,6 +38,8 @@ namespace BotStart
                 AllowedUpdates = Array.Empty<UpdateType>()
             };
 
+            await _botClient.DropPendingUpdates();
+
             _botClient.StartReceiving(
                 updateHandler: HandleUpdateAsync,
                 errorHandler: HandlePollingErrorAsync,

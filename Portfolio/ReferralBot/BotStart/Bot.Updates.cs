@@ -45,7 +45,6 @@ namespace BotStart
 
             if (messageText.StartsWith("/start"))
             {
-
                 var registration = new UserRegistrationDto
                 {
                     ChatId = message.Chat.Id,
@@ -54,7 +53,29 @@ namespace BotStart
                 };
                 using (var scope = _serviceScopeFactory.CreateAsyncScope())
                 {
+                    long refererlId = 0;
                     var botWrite = scope.ServiceProvider.GetRequiredService<IBotWrite>();
+                    if (messageText.Contains("ref_"))
+                    {
+                        string[]? parse = messageText.Split('_');
+                        if (long.TryParse(parse[1], out long result))
+                        {
+                            refererlId = result;
+                        }
+
+                        await botWrite.CheckOrCreateUserAsync(registration);
+
+                        if (refererlId == chatId)
+                        {
+                            await _botClient.SendMessage(chatId, "Нельзя пригласить себя");
+                            return;
+                        }
+                        else
+                        {
+                            await botWrite.GetReferrerAsync(chatId, refererlId);
+                            await botWrite.SetUserPointsAsync(refererlId);
+                        }
+                    }
                     await botWrite.CheckOrCreateUserAsync(registration);
                 }
                 await ShowMainMenu(chatId);

@@ -22,6 +22,10 @@ namespace BotStart
         async Task ShowBalanceAsync(long chatId, IBotWrite botWrite)
         {
             var user = await botWrite.GetUserAsync(chatId);
+            if(user == null)
+            {
+                return;
+            }
             await _botClient.SendMessage(chatId, $"Ваш баланс равен: {user.Points}");
         }
 
