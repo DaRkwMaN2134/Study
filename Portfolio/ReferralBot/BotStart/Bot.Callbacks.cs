@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using static ConfigurationLibrary.Interfaces;
 
@@ -27,11 +24,11 @@ namespace BotStart
             switch (data)
             {
                 case "balance":
-                    await ShowBalanceAsync(chatId, botWrite);
+                    await ShowBalanceAsync(chatId, botWrite, messageId);
                     break;
 
                 case "my_link":
-                    await ShowMyLinkAsync(chatId);
+                    await ShowMyLinkAsync(chatId, messageId);
                     break;
 
                 case "services":
@@ -47,7 +44,7 @@ namespace BotStart
                     break;
 
                 case "my_refs":
-                    await ShowMyReferralsAsync(chatId, botWrite);
+                    await ShowMyReferralsAsync(chatId, botWrite, messageId);
                     break;
                 case "menu_back":
                     await _botClient.EditMessageText(chatId, messageId, "Выберите действие:", replyMarkup: BuildMainMenuKeyboard());

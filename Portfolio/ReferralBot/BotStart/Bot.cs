@@ -1,15 +1,7 @@
-﻿using ConfigurationLibrary;
-using DTOLibrary;
-using DataLibrary;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Polling;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using static ConfigurationLibrary.Interfaces;
 
 namespace BotStart
 {
@@ -49,13 +41,11 @@ namespace BotStart
 
             var me = await _botClient.GetMe();
             _botUsername = me.Username;
-            Console.WriteLine(_botUsername);
 
         }
 
         async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
-            //await _logger.LogErrorAsync("Произошла ошибка", exception);
             await Task.CompletedTask;
         }
 
@@ -85,6 +75,30 @@ namespace BotStart
         }
 
         private InlineKeyboardMarkup BuildSettingsKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
+            });
+        }
+
+        private InlineKeyboardMarkup BuildLinkKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
+            });
+        }
+
+        private InlineKeyboardMarkup BuildBalanceKeyboard()
+        {
+            return new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("❌ Главное меню ", "menu_back") }
+            });
+        }
+
+        private InlineKeyboardMarkup BuildReferralsKeyboard()
         {
             return new InlineKeyboardMarkup(new[]
             {

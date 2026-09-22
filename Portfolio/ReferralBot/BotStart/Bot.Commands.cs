@@ -1,11 +1,5 @@
-﻿using ConfigurationLibrary;
-using DTOLibrary;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 using static ConfigurationLibrary.Interfaces;
 
 namespace BotStart
@@ -19,43 +13,43 @@ namespace BotStart
 
 
 
-        async Task ShowBalanceAsync(long chatId, IBotWrite botWrite)
+        async Task ShowBalanceAsync(long chatId, IBotWrite botWrite, int messageId)
         {
             var user = await botWrite.GetUserAsync(chatId);
             if(user == null)
             {
                 return;
             }
-            await _botClient.SendMessage(chatId, $"Ваш баланс равен: {user.Points}");
+            await _botClient.EditMessageText(chatId, messageId, $"Ваш баланс равен: {user.Points}", replyMarkup: BuildBalanceKeyboard());
         }
 
-        async Task ShowMyLinkAsync(long chatId)
+        async Task ShowMyLinkAsync(long chatId, int messageId)
         {
-            await _botClient.SendMessage(chatId, $"Ваша личная ссылка: t.me/{_botUsername}?start=ref_{chatId}");
+            await _botClient.EditMessageText(chatId, messageId, $"Ваша личная ссылка: t.me/{_botUsername}?start=ref_{chatId}", replyMarkup: BuildLinkKeyboard());
         }
 
         async Task ShowServicesAsync(long chatId, int messageId)
         {
-            await _botClient.EditMessageText(chatId, messageId, "{переход на новое меню кнопок}", replyMarkup: BuildServicesKeyboard());
+            await _botClient.EditMessageText(chatId, messageId, "{Здесь скоро появятся услуги. Следите за обновлениями}", replyMarkup: BuildServicesKeyboard());
         }
 
         async Task ShowHelpAsync(long chatId, int messageId)
         {
-            await _botClient.EditMessageText(chatId, messageId, "{переход на новое меню кнопок}", replyMarkup: BuildHelpKeyboard());
+            await _botClient.EditMessageText(chatId, messageId, "{Если у вас возникли вопросы — напишите администратору: @админа нет", replyMarkup: BuildHelpKeyboard());
         }
 
         async Task ShowSettingsAsync(long chatId, int messageId)
         {
-            await _botClient.EditMessageText(chatId, messageId, "{переход на новое меню кнопок}", replyMarkup: BuildSettingsKeyboard());
+            await _botClient.EditMessageText(chatId, messageId, "{Здесь скоро появятся настройки.}", replyMarkup: BuildSettingsKeyboard());
         }
 
-        async Task ShowMyReferralsAsync(long chatId, IBotWrite botWrite)
+        async Task ShowMyReferralsAsync(long chatId, IBotWrite botWrite, int messageId)
         {
             var refsList = await botWrite.GetReferralsAsync(chatId);
             string answer = string.Empty;
             if (refsList.Any() == false)
             {
-                await _botClient.SendMessage(chatId, "Список пуст");
+                await _botClient.EditMessageText(chatId, messageId, "Список пуст", replyMarkup: BuildReferralsKeyboard());
                 return;
             }
 
@@ -63,7 +57,7 @@ namespace BotStart
             {
                 answer += $"{refs.InvitedUser.Username ?? refs.InvitedUser.FirstName ?? "Без имени"} {refs.InvitedUser.RegisteredAt.ToString("dd.MM.yyyy")}\n";
             }
-            await _botClient.SendMessage(chatId, $"Ваши рефералы\n" + answer);
+            await _botClient.EditMessageText(chatId, messageId, $"Ваши рефералы\n" + answer, replyMarkup: BuildReferralsKeyboard());
         }
     }
 }

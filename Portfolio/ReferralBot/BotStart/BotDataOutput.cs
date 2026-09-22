@@ -2,9 +2,6 @@
 using DataLibrary;
 using DTOLibrary;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 using static ConfigurationLibrary.Interfaces;
 
@@ -55,14 +52,27 @@ namespace BotStart
             return user;
         }
 
-        public async Task SetUserPointsAsync(long refererlId)
+        public async Task ConfirmReferralAsync(Referral referral)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.ChatId == refererlId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.ChatId == referral.ReferrerId);
             if(user == null)
             {
                 return;
             }
             user.Points += 10;
+            referral.Status = ReferralStatus.Confirmed;
+            referral.ConfirmedAt = DateTime.UtcNow;
+
+            var transaction = new Transaction
+            {
+                UserId = user.ChatId,
+                Amount = 10,
+                Reason = TransactionReason.ReferralBonus,
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            _dbContext.Transactions.Add(transaction);
+
             await _dbContext.SaveChangesAsync();
         }
 
@@ -75,7 +85,7 @@ namespace BotStart
             return referrerList;
         }
 
-        public async Task<Referral?> GetReferrerAsync(long chatId, long referrerId)
+        public async Task<Referral> GetReferrerAsync(long chatId, long referrerId)
         {
             var referral = await _dbContext.Referrals.FirstOrDefaultAsync(c => c.ReferralId == chatId);
             if (referral == null)
