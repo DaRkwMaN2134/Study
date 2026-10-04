@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DataLibrary/DataLibrary.csproj" />
+  <Project Path="JsonWebToken/JsonWebToken.csproj" />
+</Solution>
